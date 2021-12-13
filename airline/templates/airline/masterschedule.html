@@ -1,0 +1,11 @@
+{% extends 'airline/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %} 
+<ul>
+        {{% for leg in schedule %}}
+                <li>{{ leg }}</li>
+        {{% endfor %}}
+</ul>
+{% endblock %}

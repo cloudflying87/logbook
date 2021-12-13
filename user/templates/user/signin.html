@@ -1,0 +1,35 @@
+{% extends 'logbook/base.html' %}
+
+{% block content %}
+<link href="../../../static/css/signin.css" rel="stylesheet">
+    <body class="text-center">
+      
+        <h1>Welcome to David's Django Logbook</h1>
+        <main class="form-signin">
+          <form method="POST">
+            {% csrf_token %}
+            <img class="mb-4" src="../../../static/images/airplane-icon-96.png" alt="" width="57" height="57">
+            <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+        
+            <div class="form-floating">
+              <input type="email" class="form-control" name="username" placeholder="name@example.com">
+              <label for="floatingInput">Username</label>
+            </div>
+            <div class="form-floating">
+              <input type="password" class="form-control" name="password" placeholder="Password">
+              <label for="floatingPassword">Password</label>
+            </div>
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+            <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
+          </form>
+          <a href="{% url 'create_user' %}">Register</a>
+        </main>
+    </body>
+    
+{% endblock %}

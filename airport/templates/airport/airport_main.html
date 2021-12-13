@@ -1,0 +1,26 @@
+
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %} 
+{% include 'airport/navbar.html' %} 
+<body class = "text-center">
+  <form method=POST action="{% url 'searchairport' %}" class="form-main">
+    {% csrf_token %}
+    <input type="search" class="form-control rounded" placeholder="Search Airport" aria-label="Search"
+    aria-describedby="search-addon" name="airport_searched" />
+    <button type="submit" class="btn btn-outline-primary">search</button>
+  </form>
+  {% if messages %}
+    {% for message in messages %}
+      <div class='airport display'>
+          {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+
+  </div>   
+</body>
+{% endblock%}

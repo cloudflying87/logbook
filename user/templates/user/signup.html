@@ -1,0 +1,54 @@
+
+{% extends 'logbook/base.html' %}
+
+{% block content %}
+<link href="../../../static/css/signin.css" rel="stylesheet">
+    <body class="text-center">
+      
+        <h1>Welcome to David's Django Logbook</h1>
+        <h2>Thanks for registering to use this logbook</h2>
+
+        <main class="form-signin">
+          <form method="POST">
+            {% csrf_token %}
+            <img class="mb-4" src="../../../static/images/airplane-icon-96.png" alt="" width="57" height="57">
+            <h1 class="h3 mb-3 fw-normal">Enter your information</h1>
+            
+            <div class="form-floating">
+              <input type="text" class="form-control" name="firstname" placeholder="First Name">
+              <label for="floatingInput">First Name</label>
+            </div>
+            <br>
+            <div class="form-floating">
+              <input type="text" class="form-control" name="lastname" placeholder="Last Name">
+              <label for="floatingInput">Last Name</label>
+            </div>
+            <br>
+            <div class="form-floating">
+              <input type="text" class="form-control" name="username" placeholder="name@example.com">
+              <label for="floatingInput">Username</label>
+            </div>
+            <br>
+            <div class="form-floating">
+              <input type="email" class="form-control" name="email" placeholder="Email Address">
+              <label for="floatingInput">Email Address</label>
+            </div>
+            <br>
+            <div class="form-floating">
+              <input type="password" class="form-control" name="password" placeholder="Password">
+              <label for="floatingPassword">Password</label>
+            </div>
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+            <button class="w-100 btn btn-lg btn-primary" type="submit">Register</button>
+          </form>
+          <a href="{% url 'login_user' %}">Login</a>
+        </main>
+    </body>
+
+{% endblock %}

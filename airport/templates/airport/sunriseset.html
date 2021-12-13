@@ -1,0 +1,28 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %} 
+{% include 'airport/navbar.html' %} 
+<body class = "text-center">
+  <form method=POST action="{% url 'sunriseset' %}" class="form-main">
+    {% csrf_token %}
+    <input type="search" class="form-control rounded" placeholder="Search Airport" name="airport_searched" />
+    <input type="date" class="form-control rounded" placeholder="Select Date" name="date_searched" />
+    <button type="submit" class="btn btn-outline-primary">Find Times</button>
+  </form>
+  {% if messages %}
+    {% for message in messages %}
+      <div class='airport display'>
+          {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <h4>Sunrise Time {{ sunrise }}</h4>
+  <h4>Sunset Time {{ sunset }}</h4>
+  
+
+  </div>   
+</body>
+{% endblock%}
