@@ -24,5 +24,6 @@ urlpatterns = [
     path('logbook/', include('logbook.urls')),
     path('airport/', include('airport.urls')),
     path('airline/', include('airline.urls')),
+    path('aircraft/', include('aircraft.urls')),
 
 ]

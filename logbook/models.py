@@ -1,14 +1,15 @@
 from django.db import models
 from aircraft.models import Master,Aircraftref
+from airport.models import Airport
 
 
 class FlightTime(models.Model):
     userid= models.IntegerField()
     flightdate = models.DateField()
     aircraftId = models.ForeignKey(Master,default='N1234DLH',on_delete=models.SET_DEFAULT)
-    departure = models.CharField(default ='', max_length=100,blank=True,null=True)
+    departure = models.ForeignKey(Airport,related_name='icaodepart',default ='', max_length=100,blank=True,null=True,on_delete=models.SET_DEFAULT)
     route = models.CharField(max_length=100,blank=True,null=True)
-    arrival = models.CharField(default ='', max_length=100,blank=True,null=True)
+    arrival = models.ForeignKey(Airport,related_name='icaoarrive',default ='', max_length=100,blank=True,null=True,on_delete=models.SET_DEFAULT)
     flightnum = models.IntegerField(blank=True,null=True)
     deptime = models.TimeField(blank=True,null=True)
     offtime = models.TimeField(blank=True,null=True)

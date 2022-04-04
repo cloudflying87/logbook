@@ -37,12 +37,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
     'aircraft',
     'airport',
     'airline',
@@ -51,6 +45,16 @@ INSTALLED_APPS = [
     'user',
     'bootstrap5',
     'crispy_forms',
+    'dal',
+    'dal_select2',
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    
+
 ]
 
 MIDDLEWARE = [

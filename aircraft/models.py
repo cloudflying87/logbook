@@ -1,5 +1,6 @@
 from django.db import models
 from datetime import datetime
+from django import utils
 
 class Engine(models.Model):
     engcode = models.IntegerField(primary_key=True, null=False,default = '0')
@@ -39,7 +40,7 @@ class Master(models.Model):
     engcode = models.ForeignKey(Engine, default = 'none', on_delete=models.SET_DEFAULT)
     airworthdate = models.IntegerField(null=True, blank=True)
     yearmfr = models.IntegerField(null=True, blank=True)
-    date_added = models.DateTimeField(blank=True, null=True, default=datetime.now())
-    date_edited = models.DateTimeField(blank=True, null=True, default=datetime.now())
+    date_added = models.DateTimeField(blank=True, null=True, default=utils.timezone.now)
+    date_edited = models.DateTimeField(blank=True, null=True, default=utils.timezone.now)
     def __str__(self):
         return self.nnumber

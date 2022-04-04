@@ -4,12 +4,12 @@
 {% block content %}
 {% include 'logbook/navbar.html' %}    
     <h1>Logbook page</h1>
-    <h2>Welcome {{ user.username }}</h2>
-    <h2>{{ gatheredinfo }}</h2>
-    {% load crispy_forms_tags %}
-    <form method="post">
-        {% csrf_token %}
-            {{airlineForm|crispy}}
-            <button class="btn btn-primary my-4" type="submit">Submit</button>
-    </form>
+    <div class = 'mainlogbook'>
+        {% load crispy_forms_tags %}
+        <form method="post">
+            {% csrf_token %}
+            {% crispy airlineForm %}
+                
+        </form>
+    </div>
 {% endblock%}
