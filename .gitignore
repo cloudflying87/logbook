@@ -3,6 +3,7 @@
 *.pot
 *.pyc
 **/fixtures
+/airline/credentials.json
 
 
 __pycache__
