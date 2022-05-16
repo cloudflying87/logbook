@@ -12,3 +12,4 @@ class Users(models.Model):
     defaultairport = models.CharField(max_length=10,blank=True,null=True)
     defaultairplane = models.CharField(max_length=10,blank=True,null=True)
     airlineform = models.BooleanField(blank=True,null=True)
+    zulu = models.BooleanField(blank=True,null=True,default=True)

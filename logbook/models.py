@@ -1,12 +1,16 @@
 from django.db import models
-from aircraft.models import Master,Aircraftref
+from aircraft.models import AircraftModel, Master,Aircraftref, NewPlaneMaster
 from airport.models import Airport
+from django.contrib.auth.models import User
+from django.db.models.signals import pre_save
+from django_currentuser.middleware import (
+    get_current_user)
 
 
 class FlightTime(models.Model):
     userid= models.IntegerField()
     flightdate = models.DateField()
-    aircraftId = models.ForeignKey(Master,default='N1234DLH',on_delete=models.SET_DEFAULT)
+    aircraftId = models.ForeignKey(NewPlaneMaster,default='N1234DLH',on_delete=models.SET_DEFAULT)
     departure = models.ForeignKey(Airport,related_name='icaodepart',default ='', max_length=100,blank=True,null=True,on_delete=models.SET_DEFAULT)
     route = models.CharField(max_length=100,blank=True,null=True)
     arrival = models.ForeignKey(Airport,related_name='icaoarrive',default ='', max_length=100,blank=True,null=True,on_delete=models.SET_DEFAULT)
@@ -52,9 +56,20 @@ class FlightTime(models.Model):
     passengercount = models.IntegerField(blank=True,null=True)
     scheduleddeparttime = models.TimeField(blank=True,null=True)
     scheduledarrivaltime = models.TimeField(blank=True,null=True)
-    typeacft = models.ForeignKey(Aircraftref, default=123456789, on_delete=models.SET_DEFAULT)
-    typeengine = models.IntegerField(null=True)
-    numberengines = models.IntegerField(null=True)
+    typeacft = models.ForeignKey(AircraftModel, default=123456789, on_delete=models.SET_DEFAULT)
     scheduledflight = models.BooleanField(blank=True,null=True)
     
     
+    def __str__(self):
+        return '{} {} {} {} {}'.format(self.flightdate,self.departure,self.arrival,self.aircraftId,self.personalcomments)
+
+
+# def pre_save_logbookentry(sender,instance,*args,**kwargs):
+#     currentuser = str(get_current_user())
+#     userid = User.objects.get(username=currentuser).pk
+#     print(userid)
+#     instance.userid = userid
+    
+    
+
+# pre_save.connect(pre_save_logbookentry, sender=FlightTime)

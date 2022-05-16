@@ -1,8 +1,7 @@
 from django.urls import path
-from . import views
+from aircraft.views import AirplaneSearch,ModelIDLookup
 
 urlpatterns = [
-    path('', views.aircrafthome, name="aircrafthome"),
-    path('displayresults', views.searchtype, name="searchtype"),
-
+    path('', AirplaneSearch.as_view(), name='aircrafthome'),
+    path('modellookup/', ModelIDLookup.as_view(),name='modellookup')
 ]

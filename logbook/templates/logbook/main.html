@@ -5,11 +5,11 @@
 {% include 'logbook/navbar.html' %}    
     <h1>Logbook page</h1>
     <div class = 'mainlogbook'>
-        {% load crispy_forms_tags %}
         <form method="post">
             {% csrf_token %}
-            {% crispy airlineForm %}
-                
+            {% load crispy_forms_tags %}
+            {% crispy form %}
         </form>
+        
     </div>
 {% endblock%}
