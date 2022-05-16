@@ -8,7 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
-ALLOWED_HOSTS = ['logbook.flyhomemn.com']
+ALLOWED_HOSTS = ['logbook.flyhomemn.com',
+        'localhost'
+        ]
 
 INSTALLED_APPS = [
     'dal',
@@ -102,11 +104,10 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-STATIC_ROOT = '/home/flyhomem/logbook/staticcollection'
+STATIC_ROOT = STATIC_ROOT = os.path.join(BASE_DIR, 'staticcollection')
 STATICFILES_DIRS = [
     "/home/flyhomem/virtualenv/logbook/3.8/lib/python3.8/site-packages/",
     '/home/flyhomem/logbook/static',
-    '/static/css/',
     ]
 
 
