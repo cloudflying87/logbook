@@ -102,7 +102,11 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_DIRS = [
+    "/home/flyhomem/virtualenv/logbook/3.8/lib/python3.8/site-packages/",
+    '/home/flyhomem/logbook/static',
+    '/static/css/',
+    ]
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
