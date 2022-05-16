@@ -102,7 +102,7 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-STATIC_ROOT = ['/home/flyhomem/logbook/staticcollection']
+STATIC_ROOT = '/home/flyhomem/logbook/staticcollection'
 STATICFILES_DIRS = [
     "/home/flyhomem/virtualenv/logbook/3.8/lib/python3.8/site-packages/",
     '/home/flyhomem/logbook/static',
