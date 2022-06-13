@@ -6,7 +6,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = True
+
 
 ALLOWED_HOSTS = ['logbook.flyhomemn.com',
         'localhost'
@@ -104,7 +104,9 @@ USE_TZ = True
 
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+DEBUG = True
+STATICFILES_DIRS = ( os.path.join('static'), )
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # STATICFILES_DIRS = [
 #     "/home/flyhomem/virtualenv/logbook/3.8/lib/python3.8/site-packages/",
 #     '/home/flyhomem/logbook/static',

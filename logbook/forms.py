@@ -20,7 +20,10 @@ class FlightTimeEntry(forms.ModelForm):
         currentuser = str(get_current_user())
         self.initial['userid'] = User.objects.get(username=currentuser).pk
         self.fields['flightdate'].label = "Date"
+        
         self.fields['aircraftId'].label = "Tail Number"
+        self.fields['aircraftId'].initial = 'N102NB'
+        self.fields['deptime'].initial = "11:00"
         self.fields['departure'].label = "Departure Airport"
         self.fields['arrival'].label = "Arrival Airport"
         self.fields['flightnum'].label = "Flight Number"
@@ -70,7 +73,7 @@ class FlightTimeEntry(forms.ModelForm):
         )
     class Meta:
         model = FlightTime
-        fields = ('userid','aircraftId','flightdate','departure','arrival','flightnum','deptime','offtime','ontime','arrtime','landings','printcomments','personalcomments','imc','passengercount','iap','typeofapproach' )
+        fields = ('userid','aircraftId','flightdate','departure','arrival','flightnum','deptime','offtime','ontime','arrtime','landings','printcomments','personalcomments','imc','passengercount','iap','typeofapproach','total' )
         widgets = {
             'aircraftId':autocomplete.ModelSelect2(url='aircraftidlookup'),
             'departure':autocomplete.ModelSelect2(url='autocomplete'),

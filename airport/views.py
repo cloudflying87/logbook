@@ -79,7 +79,7 @@ def getsuntimes(date,latitude,longitude):
     sunset = sun.get_sunset_time(date)
     return {'sunrise':sunrise,'sunset':sunset}
 
-def suntime (airport,unixtime,datesearched):
+def suntime(airport,unixtime,datesearched):
     airportinfo = gettingairport(airport,unixtime)
         
     lat = float(airportinfo['airport']['lat'])
