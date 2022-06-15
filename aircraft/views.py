@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.forms.formsets import formset_factory
 from django.shortcuts import render
 from django.views.generic import FormView
 from aircraft.models import NewPlaneMaster,AircraftModel
@@ -24,6 +25,10 @@ class AircraftEntry(FormView):
     form_class = AirplaneEntry
     success_url = 'entry'
 
+    def get(self, *args, **kwargs):
+        pagetitle = "Test"
+        formset = formset_factory(AirplaneEntry)
+        return self.render_to_response({'transaction_formset':formset})
     
     def form_valid(self,form):
         form.save()

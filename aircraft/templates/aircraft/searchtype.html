@@ -8,7 +8,10 @@
         <form method="post">
           {% load crispy_forms_tags %}  
           {% csrf_token %}
-          {% crispy form %}
+          {{transaction_formset.management_form}}
+            {% for form in transaction_formset %}
+                {% crispy form %}
+            {% endfor %}
         </form>
         
     </div>
