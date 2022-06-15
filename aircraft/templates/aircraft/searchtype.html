@@ -6,9 +6,9 @@
 {% include 'logbook/navbar.html' %}    
     <div class = 'mainlogbook'>
         <form method="post">
-            {% csrf_token %}
-            {% load crispy_forms_tags %}
-            {% crispy form %}
+          {% load crispy_forms_tags %}  
+          {% csrf_token %}
+          {% crispy form %}
         </form>
         
     </div>
