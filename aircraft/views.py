@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.generic import FormView
-from aircraft.models import NewPlaneMaster
+from aircraft.models import NewPlaneMaster,AircraftModel
 from dal import autocomplete
 
 from aircraft.forms import AirplaneEntry
@@ -13,7 +13,7 @@ def aircrafthome(request):
     print('hello')
 class NewIDLookup(autocomplete.Select2QuerySetView):
     def get_queryset(self):
-        qs = NewPlaneMaster.objects.all().order_by('nnumber')
+        qs = AircraftModel.objects.all().order_by('type')
         if self.q:
             qs = qs.filter(nnumber__istartswith=self.q)
             print(type(qs))
