@@ -1,11 +1,30 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.generic import FormView
+from aircraft.models import NewPlaneMaster
 from dal import autocomplete
+
+from aircraft.forms import AirplaneEntry
 
 
 @login_required(login_url='/')
 
 def aircrafthome(request):
+    print('hello')
+class NewIDLookup(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = NewPlaneMaster.objects.all().order_by('nnumber')
+        if self.q:
+            qs = qs.filter(nnumber__istartswith=self.q)
+            print(type(qs))
+        return qs
+class AircraftEntry(FormView):
     
-    return render(request, 'aircraft/searchtype.html', {})
+    template_name = 'aircraft/searchtype.html'
+    form_class = AirplaneEntry
+    success_url = 'entry'
+
+    
+    def form_valid(self,form):
+        form.save()
+        return super().form_valid(form)

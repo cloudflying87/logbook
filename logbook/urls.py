@@ -1,6 +1,6 @@
 from django.urls import path
 from logbook.views import AirportAutoComplete, LogbookEntry,AircraftIDLookup
-from . import views
+
 
 urlpatterns = [
     

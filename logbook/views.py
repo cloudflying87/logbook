@@ -4,6 +4,7 @@ from django_currentuser.middleware import (
     get_current_user)
 from django.views.generic import FormView
 from django.views.generic.base import TemplateView
+from numpy import sort
 from airport.views import gettingairport,suntime
 from aircraft.models import NewPlaneMaster
 import time
@@ -15,14 +16,14 @@ from datetime import datetime
 
 class AirportAutoComplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
-        qs = Airport.objects.all()
+        qs = Airport.objects.all().order_by('icao')
         if self.q:
             qs = qs.filter(icao__istartswith=self.q)
         return qs
 
 class AircraftIDLookup(autocomplete.Select2QuerySetView):
     def get_queryset(self):
-        qs = NewPlaneMaster.objects.all()
+        qs = NewPlaneMaster.objects.all().order_by('nnumber')
         if self.q:
             qs = qs.filter(nnumber__istartswith=self.q)
         return qs

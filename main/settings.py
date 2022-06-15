@@ -103,13 +103,13 @@ USE_TZ = True
 
 
 
-STATIC_URL = 'static/'
+
 DEBUG = True
+STATIC_URL = 'static/'
 STATICFILES_DIRS = ( os.path.join('static'), )
-# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+# STATIC_ROOT = 'static/'
 # STATICFILES_DIRS = [
 #     "/home/flyhomem/virtualenv/logbook/3.8/lib/python3.8/site-packages/",
-#     '/home/flyhomem/logbook/static',
 #     ]
 
 
