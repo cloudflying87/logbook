@@ -3,17 +3,13 @@
 
 
 {% block content %}
-{% include 'logbook/navbar.html' %} 
- 
-<body class = "text-center">
-  <div class = 'searchform'>
-    <form method="post">
-        {% csrf_token %}
-        {{form.as_p}}
+{% include 'logbook/navbar.html' %}    
+    <div class = 'mainlogbook'>
+        <form method="post">
+            {% csrf_token %}
+            {% load crispy_forms_tags %}
+            {% crispy form %}
+        </form>
         
-    </form>
-    <input type='submit' value="Add" id="addButton">
-  </div>   
-</body>
-
+    </div>
 {% endblock%}
