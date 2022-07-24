@@ -1,7 +1,6 @@
-from pyexpat import model
-from typing import Text
 from django.db import models
-
+from airport.models import Airport
+from aircraft.models import AircraftModel
 
 class Users(models.Model):
     user_id = models.IntegerField(blank=True,null=True)
@@ -10,8 +9,14 @@ class Users(models.Model):
     cfi = models.BooleanField(blank=True,null=True)
     dual = models.BooleanField(blank=True,null=True)
     solo = models.BooleanField(blank=True,null=True)
+    cx = models.BooleanField(blank=True,null=True)
+    decimal = models.BooleanField(blank=True,null=True)
+    time = models.BooleanField(blank=True,null=True)
     decimalplaces = models.IntegerField()
-    defaultairport = models.CharField(max_length=10,blank=True,null=True)
-    defaultairplane = models.CharField(max_length=10,blank=True,null=True)
+    defaultairport = models.ForeignKey(Airport,default ='', max_length=100,blank=True,null=True,on_delete=models.SET_DEFAULT)
+    defaultairplane = models.ForeignKey(AircraftModel,default='',blank=True,null=True, on_delete=models.SET_DEFAULT)
     airlineform = models.BooleanField(blank=True,null=True)
     zulu = models.BooleanField(blank=True,null=True,default=True)
+
+    # def __str__(self):
+    #     return self

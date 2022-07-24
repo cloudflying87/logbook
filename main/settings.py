@@ -15,6 +15,7 @@ ALLOWED_HOSTS = ['logbook.flyhomemn.com',
 INSTALLED_APPS = [
     'dal',
     'dal_select2',
+    'ajax_select',
     'aircraft',
     'airport',
     'airline',

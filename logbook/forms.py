@@ -2,6 +2,7 @@ from django import forms
 # from django.db.models.fields import Field
 from django.forms import widgets
 from django.forms.widgets import DateInput
+from user.models import Users
 from .models import FlightTime
 from django.contrib.auth.models import User
 from crispy_forms.helper import FormHelper
@@ -18,7 +19,12 @@ class FlightTimeEntry(forms.ModelForm):
         super(FlightTimeEntry,self).__init__(*args, **kwargs)
         self.helper = FormHelper()
         currentuser = str(get_current_user())
-        self.initial['userid'] = User.objects.get(username=currentuser).pk
+        userid=User.objects.get(username=currentuser).pk
+        preferences = Users.objects.filter(user_id=userid).values()
+        pic = preferences[0]['pic']
+        sic = preferences[0]['sic']
+        print(sic)
+        self.initial['userid'] = userid
         self.fields['flightdate'].label = "Date"
         
         self.fields['aircraftId'].label = "Tail Number"
@@ -39,6 +45,10 @@ class FlightTimeEntry(forms.ModelForm):
         self.fields['personalcomments'].label = "Comments - For Personal Memories"
         
 
+        if pic:
+            self.fields['firstofficer'].show_hidden_initial=False
+            self.fields['captain'].show_hidden_initial=True
+            
         
 
         self.helper.layout = Layout(
@@ -65,15 +75,22 @@ class FlightTimeEntry(forms.ModelForm):
                     'iap',
                     'typeofapproach',
                 ),
-                
+                    # { if sic:
+                    # Field('captain',type='hidden')
+                    # Field('firstofficer',type='hidden')
+                    # print('hello') }
                 'printcomments',
                 'personalcomments',
+                
             ),
            Submit('Submit', 'Save')
+           
         )
+
+        
     class Meta:
         model = FlightTime
-        fields = ('userid','aircraftId','flightdate','departure','arrival','flightnum','deptime','offtime','ontime','arrtime','landings','printcomments','personalcomments','imc','passengercount','iap','typeofapproach','total' )
+        fields = ('userid','aircraftId','flightdate','departure','arrival','flightnum','deptime','offtime','ontime','arrtime','landings','printcomments','personalcomments','imc','passengercount','iap','typeofapproach','total','captain','firstofficer' )
         widgets = {
             'aircraftId':autocomplete.ModelSelect2(url='aircraftidlookup'),
             'departure':autocomplete.ModelSelect2(url='autocomplete'),

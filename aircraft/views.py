@@ -24,11 +24,6 @@ class AircraftEntry(FormView):
     template_name = 'aircraft/searchtype.html'
     form_class = AirplaneEntry
     success_url = 'entry'
-
-    def get(self, *args, **kwargs):
-        pagetitle = "Test"
-        formset = formset_factory(AirplaneEntry)
-        return self.render_to_response({'transaction_formset':formset})
     
     def form_valid(self,form):
         form.save()

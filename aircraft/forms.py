@@ -9,19 +9,35 @@ from crispy_forms.helper import FormHelper
 from django_currentuser.middleware import (
     get_current_user)
 from dal import autocomplete
+from ajax_select.fields import AutoCompleteSelectField, AutoCompleteSelectMultipleField
+
+# class AirplaneEntry(forms.ModelForm):
+    
+#     def __init__(self, *args, **kwargs):
+#         super(AirplaneEntry,self).__init__(*args, **kwargs)
+#         self.helper = FormHelper()
+#         self.fields['aircraftmodel'].label = "Model"
+#         self.fields['aircraftmodel'].initial = 'N102NB'
+        
+#     class Meta:
+#         model = NewPlaneMaster
+#         fields = ('aircraftmodel',)
+#         widgets = {
+#             'aircraftmodel':autocomplete.ModelSelect2(url='newidlookup'),
+#         }
+
 
 
 class AirplaneEntry(forms.ModelForm):
-    
+
     def __init__(self, *args, **kwargs):
         super(AirplaneEntry,self).__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.fields['aircraftmodel'].label = "Model"
         self.fields['aircraftmodel'].initial = 'N102NB'
-        
     class Meta:
         model = NewPlaneMaster
         fields = ('aircraftmodel',)
-        widgets = {
-            'aircraftmodel':autocomplete.ModelSelect2(url='newidlookup'),
-        }
+
+        aircraftmodel = AutoCompleteSelectField('aircraftmodel', required=False, help_text=None)
+        # tags = AutoCompleteSelectMultipleField('tags', required=False, help_text=None)
