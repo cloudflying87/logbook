@@ -16,7 +16,7 @@ class NewIDLookup(autocomplete.Select2QuerySetView):
     def get_queryset(self):
         qs = AircraftModel.objects.all().order_by('type')
         if self.q:
-            qs = qs.filter(nnumber__istartswith=self.q)
+            qs = qs.filter(type__istartswith=self.q)
             print(type(qs))
         return qs
 class AircraftEntry(FormView):
