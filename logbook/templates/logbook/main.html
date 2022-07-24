@@ -5,7 +5,7 @@
 {% include 'logbook/navbar.html' %}    
     <h1>Airline Logbook page</h1>
     <div class = 'mainlogbook'>
-        <form method="post" id="form-container" departid="{% url 'autocomplete' %}">
+        <form method="post" id="form-container" airportid="{% url 'autocomplete' %}">
             {% csrf_token %}
             {% load crispy_forms_tags %}
             {% crispy form %}
@@ -13,12 +13,24 @@
         
     </div>
     <script>
-        var departid = $("#form-container").attr("departid");  
+        var airportid = $("#form-container").attr("airportid");  
         
         $('#id_aircraftId').select2();
         $('#id_departure').select2({
             ajax: {
-                url: departid,
+                url: airportid,
+                data: function (params) {
+                    var query = {
+                        q: params.term,
+                    }
+                return query;
+                }
+                
+            }
+            });
+            $('#id_arrival').select2({
+            ajax: {
+                url: airportid,
                 data: function (params) {
                     var query = {
                         q: params.term,
