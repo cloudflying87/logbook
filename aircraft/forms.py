@@ -23,9 +23,9 @@ class AirplaneEntry(forms.ModelForm):
     class Meta:
         model = NewPlaneMaster
         fields = ('aircraftmodel',)
-        widgets = {
-            'aircraftmodel':autocomplete.ModelSelect2(url='newidlookup'),
-        }
+        # widgets = {
+        #     'aircraftmodel':autocomplete.ModelSelect2(url='newidlookup'),
+        # }
 
 
 
