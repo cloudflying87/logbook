@@ -92,8 +92,8 @@ class FlightTimeEntry(forms.ModelForm):
         model = FlightTime
         fields = ('userid','aircraftId','flightdate','departure','arrival','flightnum','deptime','offtime','ontime','arrtime','landings','printcomments','personalcomments','imc','passengercount','iap','typeofapproach','total','captain','firstofficer' )
         widgets = {
-            'aircraftId':autocomplete.ModelSelect2(url='aircraftidlookup'),
-            'departure':autocomplete.ModelSelect2(url='autocomplete'),
+            # 'aircraftId':autocomplete.ModelSelect2(url='aircraftidlookup'),
+            # 'departure':autocomplete.ModelSelect2(url='autocomplete'),
             'arrival':autocomplete.ModelSelect2(url='autocomplete'),
             'flightdate': DateInput(attrs={'type': 'date'}),
         }

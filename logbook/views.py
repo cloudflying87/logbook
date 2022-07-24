@@ -43,13 +43,13 @@ def calculatetimes(time1,time2):
     else:
         (h,m,s) = duration.split(':')
     durationdecimal = round(int(h)+(int(m)/60),2)
-    return(durationdecimal)
+    print(durationdecimal)
+    return durationdecimal
 
 def gettingairportinfo(airportcode,unixtime,date):
     airportinfo = gettingairport(airportcode,unixtime)
     sunsettimes = suntime(airportcode,unixtime,date)
     
-    print(airportinfo)
     
 class LogbookEntry(FormView):
     
@@ -73,6 +73,7 @@ class LogbookEntry(FormView):
             deptime = form['deptime'].value()
             instance.total= calculatetimes(deptime,arrtime)
 
+        print(instance)
         instance.save()
         return super().form_valid(form)
 
@@ -80,5 +81,5 @@ def testairport(request):
     passingtime = time.time()
     icao = "KMSP"
     gatheredinfo = gettingairport(icao,passingtime)
-    print(gatheredinfo)
+    
     return render(request, 'logbook/main.html', {'gatheredinfo':gatheredinfo})
