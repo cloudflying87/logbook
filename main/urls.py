@@ -10,5 +10,7 @@ urlpatterns = [
     path('airport/', include('airport.urls')),
     path('airline/', include('airline.urls')),
     path('aircraft/', include('aircraft.urls')),
+    path('reports/', include('reports.urls')),
+
 
 ]

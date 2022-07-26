@@ -1,0 +1,12 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+    <h1>Logbook View</h1>
+
+    {% for flight in logbookdisplay %}
+        <li>{{flight.flightdate}} {{flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.total}} {{flight.day}} {{flight.daylandings}} {{flight.night}} {{flight.nightlandings}} {{flight.printcomments}}<li>
+    {% endfor %}
+ 
+{% endblock%}
