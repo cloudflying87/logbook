@@ -34,6 +34,7 @@ class NewPlaneMaster(models.Model):
     nnumber = models.CharField(primary_key=True, max_length=50, null=False,default = '0')
     taa = models.BooleanField
     aircraftmodel = models.ForeignKey(AircraftModel, default = 12345678, on_delete=models.SET_DEFAULT)
+    notes = models.CharField(max_length=200, null=True, blank=True)
     date_added = models.DateTimeField(blank=True, null=True, default=utils.timezone.now)
     date_edited = models.DateTimeField(blank=True, null=True, default=utils.timezone.now)
     def __str__(self):
