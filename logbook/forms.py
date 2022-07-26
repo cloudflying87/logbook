@@ -1,3 +1,4 @@
+from multiprocessing import get_context
 from django import forms
 # from django.db.models.fields import Field
 from django.forms import widgets
@@ -23,10 +24,8 @@ class FlightTimeEntry(forms.ModelForm):
         preferences = Users.objects.filter(user_id=userid).values()
         pic = preferences[0]['pic']
         sic = preferences[0]['sic']
-        print(sic)
         self.initial['userid'] = userid
         self.fields['flightdate'].label = "Date"
-        
         self.fields['aircraftId'].label = "Tail Number"
         self.fields['aircraftId'].initial = 'N102NB'
         self.fields['deptime'].initial = "11:00"
@@ -46,9 +45,12 @@ class FlightTimeEntry(forms.ModelForm):
         
 
         if pic:
-            self.fields['firstofficer'].show_hidden_initial=False
-            self.fields['captain'].show_hidden_initial=True
-            
+            self.fields['firstofficer'].label = 'First Officer'
+            self.fields['captain'].widget = forms.HiddenInput()
+        
+        if sic:
+            self.fields['firstofficer'].widget = forms.HiddenInput()
+            self.fields['captain'].label = 'Captain'
         
 
         self.helper.layout = Layout(
@@ -75,12 +77,11 @@ class FlightTimeEntry(forms.ModelForm):
                     'iap',
                     'typeofapproach',
                 ),
-                    # { if sic:
-                    # Field('captain',type='hidden')
-                    # Field('firstofficer',type='hidden')
-                    # print('hello') }
+                'firstofficer',
+                'captain',
                 'printcomments',
                 'personalcomments',
+                
                 
             ),
            Submit('Submit', 'Save')

@@ -85,13 +85,21 @@ def suntime(airport,unixtime,datesearched):
     lat = float(airportinfo['airport']['lat'])
     long = float(airportinfo['airport']['long'])
     srsttimes = getsuntimes(datesearched,lat,long)
-    sunriseUTC = srsttimes['sunrise']
+    # sunriseUTC = srsttimes['sunrise']
+    
+    sunriseUTC = datetime.datetime.utcfromtimestamp(time.mktime(srsttimes['sunrise'].timetuple()))
     sunriseUTCUnix = time.mktime(srsttimes['sunrise'].timetuple())
     sunriseLocal = datetime.datetime.utcfromtimestamp(time.mktime(srsttimes['sunrise'].timetuple())+airportinfo['timezoneinfo']['gmt_offset']).strftime('%H:%M')
 
-    sunsetUTC = srsttimes['sunset']
-    sunsetUTCUnix = time.mktime(srsttimes['sunset'].timetuple())
-    sunsetLocal = datetime.datetime.utcfromtimestamp(time.mktime(srsttimes['sunset'].timetuple())+airportinfo['timezoneinfo']['gmt_offset']).strftime('%H:%M')
+    if srsttimes['sunset'].time() < srsttimes['sunrise'].time():
+        correctsunsetdate = srsttimes['sunset'] + datetime.timedelta(days=1)
+    else:
+        correctsunsetdate = srsttimes['sunset']
+    # sunsetUTC = srsttimes['sunset']
+    
+    sunsetUTC = datetime.datetime.utcfromtimestamp(time.mktime(correctsunsetdate.timetuple()))
+    sunsetUTCUnix = time.mktime(correctsunsetdate.timetuple())
+    sunsetLocal = datetime.datetime.utcfromtimestamp(time.mktime(correctsunsetdate.timetuple())+airportinfo['timezoneinfo']['gmt_offset']).strftime('%H:%M')
 
     return({'sunriseUTC':sunriseUTC,'sunriseUTCUnix':sunriseUTCUnix,'sunriseLocal':sunriseLocal,'sunsetUTC':sunsetUTC,'sunsetUTCUnix':sunsetUTCUnix,'sunsetLocal':sunsetLocal})
 

@@ -63,14 +63,3 @@ class FlightTime(models.Model):
     
     def __str__(self):
         return '{} {} {} {} {}'.format(self.flightdate,self.departure,self.arrival,self.aircraftId,self.personalcomments)
-
-
-# def pre_save_logbookentry(sender,instance,*args,**kwargs):
-#     currentuser = str(get_current_user())
-#     userid = User.objects.get(username=currentuser).pk
-#     print(userid)
-#     instance.userid = userid
-    
-    
-
-# pre_save.connect(pre_save_logbookentry, sender=FlightTime)
