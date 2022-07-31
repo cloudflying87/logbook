@@ -6,17 +6,10 @@
 <body class = "text-center">
         <form method=POST action="{% url 'deltaschedule' %}" class="form-main">
                 {% csrf_token %}
-                <input type="search" class="form-control rounded" placeholder="Paste Schedule" aria-label="Search"
-                aria-describedby="search-addon" name="schedule" />
-                <button type="submit" class="btn btn-outline-primary">Submit</button>
+                {% load crispy_forms_tags %}
+                {% crispy form %}
         </form>
-        {% if messages %}
-                {% for message in messages %}
-                <div class='airport display'>
-                {{ message }}
-                </div>
-                {% endfor %}
-        {% endif %}
+        {{ schedule }}
 
 
         </div>   

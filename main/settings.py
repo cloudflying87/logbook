@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'reports',
     'logbook',
     'user',
+    'tinymce',
     'bootstrap5',
     'crispy_forms',
     'django.contrib.admin',

@@ -28,3 +28,9 @@ body {
 .extra-class{
   width: 30px;
 }
+
+#schedulebox{
+  height: 40em;
+  width:20em;
+  white-space: pre;
+}

@@ -6,7 +6,19 @@
     <h1>Logbook View</h1>
 
     {% for flight in logbookdisplay %}
-        <li>{{flight.flightdate}} {{flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.total}} {{flight.day}} {{flight.daylandings}} {{flight.night}} {{flight.nightlandings}} {{flight.printcomments}}<li>
+        {{flight.flightdate}} {{flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.total}} {{flight.day}} {{flight.daylandings}} {{flight.night}} {{flight.nightlandings}} {{flight.printcomments}}</br>
     {% endfor %}
+
+    
+        {%if page_obj.has_previous %} {# whether the previous page exists #}
+            <a href="?page={{page_obj.previous_page_number}}"></a> {# link to the prev page #}
+        {% endif %}
+        <span>{{page_obj.number}}</span> {# the current page number #}
+        
+        {%if page_obj.has_next %} {# whether the next page exists #}
+            <a href="?page={{page_obj.next_page_number}}">></a> {# link to the next page #}
+        {% endif %}
+    
  
 {% endblock%}
+

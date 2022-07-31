@@ -165,7 +165,7 @@ class LogbookEntry(FormView):
     
     template_name = 'logbook/main.html'
     form_class = FlightTimeEntry
-    success_url = 'entry'
+    success_url = 'logbookdisplay'
 
     
     def form_valid(self,form):

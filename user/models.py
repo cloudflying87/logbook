@@ -1,4 +1,5 @@
 from django.db import models
+from airline.models import AirlineList
 from airport.models import Airport
 from aircraft.models import AircraftModel
 
@@ -14,6 +15,7 @@ class Users(models.Model):
     time = models.BooleanField(blank=True,null=True)
     decimalplaces = models.IntegerField()
     defaultairport = models.ForeignKey(Airport,default ='', max_length=100,blank=True,null=True,on_delete=models.SET_DEFAULT)
+    # airline = models.ForeignKey(AirlineList,default ='DAL', max_length=3,on_delete=models.SET_DEFAULT)
     defaultairplane = models.ForeignKey(AircraftModel,default='',blank=True,null=True, on_delete=models.SET_DEFAULT)
     airlineform = models.BooleanField(blank=True,null=True)
     zulu = models.BooleanField(blank=True,null=True,default=True)

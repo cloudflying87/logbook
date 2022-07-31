@@ -1,7 +1,7 @@
 from django.urls import path
-from . import views
+from airline.views import DeltaScheduleEntry, airlinehome
 
 urlpatterns = [
-    path('', views.airlinehome, name="airlinehome"),
-    path('schedule', views.workdeltschedule, name="deltaschedule"),
+    # path('', airlinehome, name="airlinehome"),
+    path('', DeltaScheduleEntry.as_view(), name="deltaschedule"),
 ]
