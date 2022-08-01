@@ -4,8 +4,8 @@
 {% block content %}
 {% include 'logbook/navbar.html' %} 
 <ul>
-        {{% for leg in schedule %}}
-                <li>{{ leg }}</li>
-        {{% endfor %}}
+        {% for trip in schedule %}
+                {{trip}}
+        {% endfor %}
 </ul>
 {% endblock %}

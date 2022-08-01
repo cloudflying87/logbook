@@ -57,7 +57,8 @@ class FlightTime(models.Model):
     passengercount = models.IntegerField(blank=True,null=True)
     scheduleddeparttime = models.TimeField(blank=True,null=True)
     scheduledarrivaltime = models.TimeField(blank=True,null=True)
-    # typeacft = models.ForeignKey(AircraftModel, default=123456789, on_delete=models.SET_DEFAULT)
+    scheduledblock = models.IntegerField(blank=True,null=True)
+    rotationid = models.IntegerField(blank=True,null=True)
     scheduledflight = models.BooleanField(blank=True,null=True)
     
     

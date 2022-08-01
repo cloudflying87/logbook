@@ -18,8 +18,6 @@ from datetime import datetime, timedelta
 import time
 from user.models import Users
 from django.contrib.auth.models import User
-from django_currentuser.middleware import (
-    get_current_user)
 
 class AirportAutoComplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
