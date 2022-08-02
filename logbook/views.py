@@ -4,12 +4,14 @@ from django.contrib.auth.decorators import login_required
 from django_currentuser.middleware import (
     get_current_user)
 from django.views.generic import FormView
+from django.views.generic.list import ListView
 from django.views.generic.base import TemplateView
 from numpy import sort
 from airport.views import gettingairport,suntime
 from aircraft.models import NewPlaneMaster
 import time
 from airport.models import Airport
+from .models import FlightTime
 from geopy.distance import great_circle
 from django.urls import reverse_lazy
 from dal import autocomplete
@@ -17,6 +19,7 @@ from .forms import FlightTimeEntry
 from datetime import datetime, timedelta
 import time
 from user.models import Users
+from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 
 class AirportAutoComplete(autocomplete.Select2QuerySetView):
@@ -36,6 +39,48 @@ class AircraftIDLookup(autocomplete.Select2QuerySetView):
 @login_required(login_url='/')
 def logbookhome(request):
     print('hello')
+
+class LogbookDisply(ListView):
+    
+    model = FlightTime
+    paginate_by = 25
+    context_object_name = "flight_list"
+    template_name = 'logbook/logbook.html'
+    
+    
+
+    def get_queryset(self, *args, **kwargs):
+        currentuser = str(get_current_user())
+        userid=User.objects.get(username=currentuser).pk
+    
+        logbookdisplay = FlightTime.objects.all().filter(userid=userid).order_by('-flightdate')
+        return logbookdisplay
+    
+
+# def logbookdisply(request):
+#     currentuser = str(get_current_user())
+#     userid=User.objects.get(username=currentuser).pk
+    
+#     logbookdisplay = FlightTime.objects.all().filter(userid=userid).order_by('flightdate')
+#     entries = Paginator(logbookdisplay,25)
+
+#     # getting the desired page number from url
+#     page_number = request.GET.get('page')
+#     print(entries.num_pages)
+#     # try:
+#     page_obj = entries.get_page(page_number)  # returns the desired page object
+#     # except PageNotAnInteger:
+#     #     # if page_number is not an integer then assign the first page
+#     #     page_obj = entries.page(1)
+#     # except EmptyPage:
+#     #     # if page is empty then return last page
+#     #     page_obj = entries.page(entries.num_pages)
+#     context = {'page_obj': page_obj}
+#     # sending the page object to index.html
+#     # return render(request, 'index.html', context)
+
+#     return render(request,'logbook/logbook.html',{'logbookdisplay':page_obj}) 
+
 
 def calculatetimes(time1,time2,decimalplaces,decimal):
     #used to calculate times by subtracting time2 from time1 can be used for block time as well as flight time

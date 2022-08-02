@@ -17,7 +17,7 @@ def login_user(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('logbookhome')
+            return redirect('logbookdisplay')
         else:
             messages.success(request, "Incorrect username or password.")
             return redirect('/')
