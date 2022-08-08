@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
-os.environ['OPENBLAS_NUM_THREADS'] = '12'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 load_dotenv()
 
