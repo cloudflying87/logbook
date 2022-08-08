@@ -5,6 +5,7 @@
 **/fixtures
 /airline/credentials.json
 /airline/token.json
+token.json
 
 __pycache__
 db.sqlite3

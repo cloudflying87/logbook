@@ -3,6 +3,7 @@ from django import forms
 # from django.db.models.fields import Field
 from django.forms import widgets
 from django.forms.widgets import DateInput
+from aircraft.models import NewPlaneMaster
 from user.models import Users
 from .models import FlightTime
 from django.contrib.auth.models import User
@@ -24,12 +25,15 @@ class FlightTimeEntry(forms.ModelForm):
         preferences = Users.objects.filter(user_id=userid).values()
         pic = preferences[0]['pic']
         sic = preferences[0]['sic']
+        initialairport = preferences[0]['defaultairport_id']
         self.initial['userid'] = userid
         self.fields['flightdate'].label = "Date"
         self.fields['aircraftId'].label = "Tail Number"
-        self.fields['aircraftId'].initial = 'N102NB'
+        self.fields['aircraftId'].initial = 'N802DN'
+        # self.fields['departure'].queryset = NewPlaneMaster.objects.all().order_by('nnumber')[:10]
         self.fields['deptime'].initial = "11:00"
         self.fields['departure'].label = "Departure Airport"
+        self.fields['departure'].initial = initialairport
         self.fields['arrival'].label = "Arrival Airport"
         self.fields['flightnum'].label = "Flight Number"
         self.fields['deptime'].label = "Departure Time (Out)"

@@ -1,5 +1,6 @@
 
 from calendar import month
+import secrets
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from airport.models import Airport
@@ -24,7 +25,6 @@ import re
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
-import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -40,11 +40,9 @@ def workdeltschedulegoogle(request):
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
     
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    
+    if os.path.exists('/airline/token.json'):
+        creds = Credentials.from_authorized_user_file('./airline/token.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -53,10 +51,10 @@ def workdeltschedulegoogle(request):
             flow = InstalledAppFlow.from_client_secrets_file(
                 './airline/credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
+        
         # Save the credentials for the next run
-        with open('token.json', 'w') as token:
+        with open('./airline/token.json', 'w') as token:
             token.write(creds.to_json())
-
     try:
         service = build('calendar', 'v3', credentials=creds)
 
@@ -67,7 +65,7 @@ def workdeltschedulegoogle(request):
         trip = []
         monthsum = []
         while True:
-            events = service.events().list(calendarId='jb360v1bcsqt0m7cf7sja0i06g@group.calendar.google.com', pageToken=page_token,timeMin=now).execute()
+            events = service.events().list(calendarId=calendarId, pageToken=page_token,timeMin=now).execute()
             for event in events['items']:
                 summary = re.sub(r'\n','',event['summary'])
                 tripnum = summary[0:4]
@@ -103,10 +101,11 @@ def workdeltschedulegoogle(request):
 
     schedulelist = modifiyingschedule(monthsum)
 
-    return render(request, 'airline/masterschedule.html', {'schedule': schedulelist}) 
+    return render(request, 'airline/masterschedule.html', {'added': schedulelist[0],'notadded':schedulelist[1]}) 
 
 def modifiyingschedule(schedule):
-    schedulelist = []
+    added = []
+    notadded = []
     currentuser = str(get_current_user())
     userid=User.objects.get(username=currentuser).pk
     for trip in schedule:
@@ -118,30 +117,45 @@ def modifiyingschedule(schedule):
             departairport = departairportinfo['airport']['icao']
             arrivalairportinfo = gettingairport(leg[3],unixdate)
             arrivalairport = arrivalairportinfo['airport']['icao']
-            departuretime = (datetime.datetime.strptime(leg[4], '%H:%M') + timedelta(hours=departairportinfo['gmt_offset_single'])).time()
-            # departuretime = departuretimestart.strftime('%H:%M') 
-            arrivaltime = (datetime.datetime.strptime(leg[5], '%H:%M') + timedelta(hours=departairportinfo['gmt_offset_single'])).time()
+            #correcting for plus or minus GMT
+            if departairportinfo['gmt_offset_single'] < 0:
+                departuretime = (datetime.datetime.strptime(leg[4], '%H:%M') + timedelta(hours=abs(departairportinfo['gmt_offset_single']))).time()
+            elif departairportinfo['gmt_offset_single'] > 0:
+                departuretime = (datetime.datetime.strptime(leg[4], '%H:%M') - timedelta(hours=abs(departairportinfo['gmt_offset_single']))).time()
+            else: 
+                departuretime = (datetime.datetime.strptime(leg[4], '%H:%M')).time()
+            # correcting for plus or minus GMT
+            if arrivalairportinfo['gmt_offset_single'] < 0:
+                arrivaltime = (datetime.datetime.strptime(leg[5], '%H:%M') + timedelta(hours=abs(arrivalairportinfo['gmt_offset_single']))).time()
+            elif arrivalairportinfo['gmt_offset_single'] > 0:
+                arrivaltime = (datetime.datetime.strptime(leg[5], '%H:%M') - timedelta(hours=abs(arrivalairportinfo['gmt_offset_single']))).time()
+            else:
+                arrivaltime = (datetime.datetime.strptime(leg[5], '%H:%M')).time()
             blocktime = calculatetimes(departuretime.strftime('%H:%M'),arrivaltime.strftime('%H:%M'),2,1)
-            leg = [flightdate,flightnumber,departairport,arrivalairport,departuretime,arrivaltime,blocktime,leg[6]]
-            schedulelist.append(leg)
-            flighttime = FlightTime()
-            flighttime.userid = userid
-            flighttime.aircraftId = NewPlaneMaster.objects.get(nnumber = 'N917DU')
-            flighttime.flightdate = flightdate
-            flighttime.flightnum = flightnumber
-            flighttime.departure = Airport.objects.get(icao = departairport)
-            flighttime.arrival = Airport.objects.get(icao = arrivalairport)
-            # flighttime.arrival = arrivalairport
-            flighttime.scheduleddeparttime = departuretime
-            flighttime.scheduledarrivaltime = arrivaltime
-            flighttime.scheduledblock = blocktime
-            flighttime.rotationid = leg[6]
-            flighttime.scheduledflight = True
-            flighttime.save()
-
+            rotationid = leg[6]
+            leg = [flightdate.strftime("%m/%d/%Y"),flightnumber,departairport,arrivalairport,departuretime.strftime("%H:%M"),arrivaltime.strftime("%H:%M"),blocktime,rotationid]
+            if not FlightTime.objects.filter(userid=userid,flightdate=flightdate,flightnum=flightnumber).exists():
+                flighttime = FlightTime()
+                flighttime.userid = userid
+                flighttime.aircraftId = NewPlaneMaster.objects.get(nnumber = 'N917DU')
+                flighttime.flightdate = flightdate
+                flighttime.flightnum = flightnumber
+                flighttime.departure = Airport.objects.get(icao = departairport)
+                flighttime.arrival = Airport.objects.get(icao = arrivalairport)
+                # flighttime.arrival = arrivalairport
+                flighttime.scheduleddeparttime = departuretime
+                flighttime.scheduledarrivaltime = arrivaltime
+                flighttime.scheduledblock = blocktime
+                flighttime.rotationid = rotationid
+                
+                flighttime.scheduledflight = True
+                flighttime.save()
     
-    
-    return schedulelist
+                added.append(leg)
+            else:
+                notadded.append(leg)
+                    
+    return added,notadded
 class DeltaScheduleEntry(FormView):
     
     template_name = 'airline/schedule.html'
@@ -155,10 +169,8 @@ class DeltaScheduleEntry(FormView):
         instance = form.save(commit=False)
         rawtrip = form['rawdata'].value()
         schedulesp = rawtrip.split()
-        # print(schedulesp)
         for count,line in enumerate(schedulesp):
             if line == '<br':
-                print(lines)
                 linebyline.append(lines)
                 lines = []
             

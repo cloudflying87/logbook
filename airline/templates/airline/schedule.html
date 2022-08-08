@@ -3,6 +3,7 @@
 
 {% block content %}
 {% include 'logbook/navbar.html' %} 
+<a class="nav-link" href="{% url 'googleschedule' %}"> Google Calendar Sync</a>
 <body class = "text-center">
         <form method=POST action="{% url 'deltaschedule' %}" class="form-main">
                 {% csrf_token %}

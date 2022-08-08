@@ -3,12 +3,12 @@ from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
 from django_currentuser.middleware import (
     get_current_user)
-from django.views.generic import FormView
+from django.views.generic import FormView, DetailView
 from django.views.generic.list import ListView
-from django.views.generic.base import TemplateView
+from django.views.generic.edit import UpdateView
 from numpy import sort
 from airport.views import gettingairport,suntime
-from aircraft.models import NewPlaneMaster
+from aircraft.models import NewPlaneMaster,AircraftModel
 import time
 from airport.models import Airport
 from .models import FlightTime
@@ -47,40 +47,14 @@ class LogbookDisply(ListView):
     context_object_name = "flight_list"
     template_name = 'logbook/logbook.html'
     
-    
 
     def get_queryset(self, *args, **kwargs):
         currentuser = str(get_current_user())
         userid=User.objects.get(username=currentuser).pk
     
         logbookdisplay = FlightTime.objects.all().filter(userid=userid).order_by('-flightdate')
+        
         return logbookdisplay
-    
-
-# def logbookdisply(request):
-#     currentuser = str(get_current_user())
-#     userid=User.objects.get(username=currentuser).pk
-    
-#     logbookdisplay = FlightTime.objects.all().filter(userid=userid).order_by('flightdate')
-#     entries = Paginator(logbookdisplay,25)
-
-#     # getting the desired page number from url
-#     page_number = request.GET.get('page')
-#     print(entries.num_pages)
-#     # try:
-#     page_obj = entries.get_page(page_number)  # returns the desired page object
-#     # except PageNotAnInteger:
-#     #     # if page_number is not an integer then assign the first page
-#     #     page_obj = entries.page(1)
-#     # except EmptyPage:
-#     #     # if page is empty then return last page
-#     #     page_obj = entries.page(entries.num_pages)
-#     context = {'page_obj': page_obj}
-#     # sending the page object to index.html
-#     # return render(request, 'index.html', context)
-
-#     return render(request,'logbook/logbook.html',{'logbookdisplay':page_obj}) 
-
 
 def calculatetimes(time1,time2,decimalplaces,decimal):
     #used to calculate times by subtracting time2 from time1 can be used for block time as well as flight time
@@ -204,19 +178,22 @@ def nighttime(totaltime,deptime,arrtime,depsunrise,depsunset,arrsunrise,arrsunse
         landingtime = 'night' 
         check = checkdaynight(nighttime,totaltime,landing,landingtime) 
         return check
+
 class LogbookEntry(FormView):
     
     template_name = 'logbook/main.html'
     form_class = FlightTimeEntry
-    success_url = 'logbookdisplay'
+    success_url = '/logbook'
 
     
     def form_valid(self,form):
         instance = form.save(commit=False)
+        print(instance)
         currentuser = str(get_current_user())
         userid=User.objects.get(username=currentuser).pk
         preferences = Users.objects.filter(user_id=userid).values()
-        
+        aircraft_type = NewPlaneMaster.objects.filter(nnumber=instance.aircraftId).values()
+        instance.aircrafttype = AircraftModel.objects.get(type=aircraft_type[0]['aircraftmodel_id'])
         #getting date information setup to be used for all the searches
         flightdate = datetime.strptime(form['flightdate'].value(),'%Y-%m-%d')
         unixdate = time.mktime(flightdate.timetuple())
@@ -239,10 +216,23 @@ class LogbookEntry(FormView):
         if form['arrtime'].value() != "" and form['deptime'].value() != "":
             arrtime = form['arrtime'].value()
             deptime = form['deptime'].value()
+            
             decimalplaces = preferences[0]['decimalplaces']
             #setup for future development of hh:ss instead of decimal. 
             decimal=preferences[0]['decimal']
+
+            if form['offtime'].value() != "" and form['ontime'].value() != "":
+                offtime = form['offtime'].value()
+                ontime = form['ontime'].value()
+                instance.flighttime = calculatetimes(offtime,ontime,decimalplaces,decimal)
+
+                if instance.scheduledflight == 1:
+                    instance.scheduledflight = 0
+
+            
             total= calculatetimes(deptime,arrtime,decimalplaces,decimal)
+            
+            
             #Setting all the values based on user preferences, these times are set to autolog
             if preferences[0]['pic']:
                 instance.pic = total
@@ -260,7 +250,9 @@ class LogbookEntry(FormView):
                 #verfying the user preference is to autolog cross country time
                 if preferences[0]['cx']:
                     #caculating distance between departure and arrival airports and then adding it to the instance
-                    if (great_circle((depairportinfo[0]['airport']['lat'],depairportinfo[0]['airport']['long']),(arrairportinfo[0]['airport']['lat'],arrairportinfo[0]['airport']['long'])).nm) > 50:
+                    distance = (great_circle((depairportinfo[0]['airport']['lat'],depairportinfo[0]['airport']['long']),(arrairportinfo[0]['airport']['lat'],arrairportinfo[0]['airport']['long'])).nm)
+                    instance.distance = distance
+                    if distance > 50:
                         instance.crosscountry = total
                 #getting the times all set correctly to work on the night time calculations
                 departuretime = datetime.combine(flightdate,datetime.strptime(deptime,'%H:%M').time())
@@ -283,9 +275,22 @@ class LogbookEntry(FormView):
         instance.save()
         return super().form_valid(form)
 
-def testairport(request):
-    passingtime = time.time()
-    icao = "KMSP"
-    gatheredinfo = gettingairport(icao,passingtime)
+class EditEntry(LogbookEntry,UpdateView):
     
-    return render(request, 'logbook/main.html', {'gatheredinfo':gatheredinfo})
+    model = FlightTime
+    form = FlightTimeEntry
+    pk_url_kwarg = 'id'
+    template_name = 'logbook/main.html'
+    success_url = '/logbook'
+
+class ViewEntry(DetailView):
+    
+    model = FlightTime
+    pk_url_kwarg = 'id'
+    context_object_name = "flight"
+    template_name = 'logbook/detail.html'
+
+    # def get_queryset(self, *args, **kwargs):
+    #     logbookdisplay = FlightTime.objects.get(id=id)
+    #     return logbookdisplay
+    

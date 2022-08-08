@@ -7,7 +7,8 @@
 
     {% for flight in flight_list %}
     
-        <a href="editflight/{{flight.id}}"> {{flight.flightdate }} </a>  {{ flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.flightnum}} {{flight.total}} <br/>
+        <a href="view/{{flight.id}}"> {{flight.flightdate }} </a>  {{ flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.flightnum}} {{flight.total}} <a href="edit/{{flight.id}}"> <i class="fa fa-pencil"></i></a> <br/>
+        {{flight.printcomments}}{{flight.captain}}{{flight.firstofficer}}<br/>
         <hr/>
     
         {% empty %}
