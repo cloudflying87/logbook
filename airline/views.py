@@ -52,15 +52,17 @@ def CalAuthView():
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
     API_SERVICE_NAME = 'calendar'
     API_VERSION = 'v3'
-    print("authflow")
+    
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         client_secrets_file=CLIENT_SECRETS_FILE,
         scopes=SCOPES)
+    print(sys.argv,len(sys.argv))
     if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
         flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
         
     else:
         flow.redirect_uri = 'http://logbook.flyhomemn.com/airline/oauth2callback/'
+        print("authflow")
     
     
 
