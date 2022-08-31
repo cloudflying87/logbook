@@ -52,7 +52,7 @@ def CalAuthView(request):
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
     API_SERVICE_NAME = 'calendar'
     API_VERSION = 'v3'
-
+    print("authflow")
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         client_secrets_file=CLIENT_SECRETS_FILE,
         scopes=SCOPES)
