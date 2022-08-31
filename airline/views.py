@@ -129,7 +129,7 @@ def workdeltschedulegoogle(request):
     CalAuthView()
     user = Users.objects.get(user_id=getuserid())
     calid = user.calendarid
-    print(user,calid)
+    print(user,calid,'test')
     credentials = Credentials(
         token=user.token,
         refresh_token = user.refresh_token,
@@ -138,6 +138,7 @@ def workdeltschedulegoogle(request):
         client_secret= user.client_secret)
         # scopes = user.scopes)
     try:
+        print('calendarlist')
         service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials)
 
         # Call the Calendar API
@@ -146,7 +147,7 @@ def workdeltschedulegoogle(request):
         count = 0
         page_token = None
         if calid == '':
-            
+            print('firstif')
             while True:
                 calendar_list = service.calendarList().list(pageToken=page_token).execute()
 
@@ -161,6 +162,7 @@ def workdeltschedulegoogle(request):
             return render(request, 'airline/choosecal.html', {'added': added})
 
         else:
+            print('eventlist')
             # here is retreving calendar events and then working them correctly to get everything in the database. 
             now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
             calendarId=calid
