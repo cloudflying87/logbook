@@ -126,9 +126,10 @@ def setcalid(request,id):
 #after the calendar id is choosen then 
 #if calendar id is already set then it goes to retreiving the information
 def workdeltschedulegoogle(request):
-    CalAuthView
+    CalAuthView()
     user = Users.objects.get(user_id=getuserid())
     calid = user.calendarid
+    print(user,calid)
     credentials = Credentials(
         token=user.token,
         refresh_token = user.refresh_token,
