@@ -145,7 +145,7 @@ def workdeltschedulegoogle(request):
         added = []
         count = 0
         page_token = None
-        if calid == '':
+        if calid == '' or calid == None:
             print('calendarlist')
             while True:
                 print('firstif')
