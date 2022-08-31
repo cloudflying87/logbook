@@ -47,7 +47,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 
 #for the google auth to see the calendar information 
-def CalAuthView(request):
+def CalAuthView():
     CLIENT_SECRETS_FILE = './airline/credentials.json'
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
     API_SERVICE_NAME = 'calendar'
@@ -56,7 +56,7 @@ def CalAuthView(request):
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         client_secrets_file=CLIENT_SECRETS_FILE,
         scopes=SCOPES)
-    if sys.argv[1] == 'runserver':
+    if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
         flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
         
     else:
@@ -75,7 +75,7 @@ class cal_base:
         flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
             client_secrets_file=CLIENT_SECRETS_FILE,
             scopes=SCOPES)
-        if sys.argv[1] == 'runserver':
+        if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
             flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
             
         else:
@@ -91,7 +91,7 @@ class Oauth2CallbackView(View):
         
         flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
             CLIENT_SECRETS_FILE, scopes=SCOPES,state=state)
-        if sys.argv[1] == 'runserver':
+        if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
             flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
             
             redirecturi = 'http://localhost:8000/airline/'
@@ -175,7 +175,6 @@ def workdeltschedulegoogle(request):
                     summary = re.sub(r'\n','',event['summary'])
                     tripnum = summary[0:4]
                     triptimes = summary[-11:]
-                    print(triptimes)
                     description = event['description']
                     descriptionsplit = description.split()
 
