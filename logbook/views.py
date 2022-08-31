@@ -1,3 +1,9 @@
+from audioop import cross
+import csv
+import json
+import sys
+from unicodedata import decimal
+from django.http import HttpResponse
 from contextlib import nullcontext
 from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
@@ -6,7 +12,6 @@ from django_currentuser.middleware import (
 from django.views.generic import FormView, DetailView
 from django.views.generic.list import ListView
 from django.views.generic.edit import UpdateView
-from numpy import sort
 from airport.views import gettingairport,suntime
 from aircraft.models import NewPlaneMaster,AircraftModel
 import time
@@ -21,6 +26,7 @@ import time
 from user.models import Users
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
+from user.views import getuserid
 
 class AirportAutoComplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
@@ -41,7 +47,7 @@ def logbookhome(request):
     print('hello')
 
 class LogbookDisply(ListView):
-    
+    #used to show all flights in the database for the user
     model = FlightTime
     paginate_by = 25
     context_object_name = "flight_list"
@@ -51,11 +57,24 @@ class LogbookDisply(ListView):
     def get_queryset(self, *args, **kwargs):
         currentuser = str(get_current_user())
         userid=User.objects.get(username=currentuser).pk
-    
         logbookdisplay = FlightTime.objects.all().filter(userid=userid).order_by('-flightdate')
-        
         return logbookdisplay
 
+def converttoUTC(time,timezone):
+    #converting local times to utc returns a string
+    timeobject = datetime.strptime(time, '%H:%M')
+    if timezone < 0:
+        timecorrection = timeobject + timedelta(hours=abs(timezone))
+        
+    if timezone > 0:
+        timecorrection = timeobject - timedelta(hours=abs(timezone))
+
+    if timezone ==0:
+        timecorrection = timeobject
+
+    timecorrectionstring = timecorrection.strftime("%H:%M")
+    
+    return timecorrectionstring
 def calculatetimes(time1,time2,decimalplaces,decimal):
     #used to calculate times by subtracting time2 from time1 can be used for block time as well as flight time
     deptime = datetime.strptime(time1, '%H:%M')
@@ -139,7 +158,7 @@ def nighttime(totaltime,deptime,arrtime,depsunrise,depsunset,arrsunrise,arrsunse
     
     #all night time 
     if deptime > depsunset and deptime < depsunrise and arrtime > arrsunset and arrtime < arrsunrise: 
-        
+        print('firstallnight')
         nighttime = totaltime 
         daytime = None
         if landing > 0: 
@@ -162,22 +181,37 @@ def nighttime(totaltime,deptime,arrtime,depsunrise,depsunset,arrsunrise,arrsunse
             return nighttime,daytime
 
     #departing at night landing during the day 
-    if deptime < depsunset and arrtime < arrsunset: 
-        
+    if deptime <= depsunrise and arrtime <= arrsunset: 
+        print('nightdepart',deptime,depsunrise,depsunset,arrtime,arrsunset)
         nightcalc = (depsunrise - deptime)
-        nighttime = ((nightcalc.total_seconds())/60)/60
+        nighttime = round((((nightcalc.total_seconds())/60)/60),2)
         
         landingtime = 'day' 
         check = checkdaynight(nighttime,totaltime,landing,landingtime) 
+        print(check)
         return check
     #departing during the day landing at night 
-    if deptime < depsunset and arrtime > arrsunset: 
-        
+    if deptime <= depsunset and arrtime >= arrsunset: 
+        print('daydepart')
         nightcalc = arrtime - arrsunset 
-        nighttime = ((nightcalc.total_seconds())/60)/60
+        nighttime = round((((nightcalc.total_seconds())/60)/60),2)
         landingtime = 'night' 
-        check = checkdaynight(nighttime,totaltime,landing,landingtime) 
+        check = checkdaynight(nighttime,totaltime,landing,landingtime)
+        print(check) 
         return check
+
+    #all night but needs to look at the next day to work
+    if deptime >= depsunset and arrtime >= arrsunset:
+        if arrtime <= arrsunrise + timedelta(days = 1):
+            print('nightcatch')
+            nighttime = totaltime 
+            daytime = None
+            if landing > 0: 
+                nightlanding = landing 
+                daylanding = None
+                return nighttime,daytime,nightlanding,daylanding     
+            else:
+                return nighttime,daytime
 
 class LogbookEntry(FormView):
     
@@ -188,7 +222,7 @@ class LogbookEntry(FormView):
     
     def form_valid(self,form):
         instance = form.save(commit=False)
-        print(instance)
+        #doing all the work on the data to save the flight to the database
         currentuser = str(get_current_user())
         userid=User.objects.get(username=currentuser).pk
         preferences = Users.objects.filter(user_id=userid).values()
@@ -274,6 +308,170 @@ class LogbookEntry(FormView):
         
         instance.save()
         return super().form_valid(form)
+
+def reworktimes(request):
+    currentuser = str(get_current_user())
+    userid=User.objects.get(username=currentuser).pk
+    filename = 'airlinesmall'
+    preferences = Users.objects.filter(user_id=userid).values()
+    with open('./logbook/'+filename+'.csv','r') as read_file:
+        logbook = csv.reader(read_file)
+        leg = []
+        allentries = []
+        for count,entry in enumerate(logbook):
+            if (count/500).is_integer():
+                print('still working',count)
+            flightdatetotal = datetime.strptime(entry[0],'%Y-%m-%d %H:%M:%S')
+            flightdate = flightdatetotal.date()
+            unixdate = time.mktime(flightdate.timetuple())
+            tailnumber = entry[1]
+            depairportinfo = gettingairportinfo(entry[2],unixdate,flightdate)
+            arrairportinfo = gettingairportinfo(entry[4],unixdate,flightdate)
+            if entry[10] != '':
+                landings = int(entry[10])
+            else:
+                landings = 0
+            
+            if entry[6] != "" and entry[9] != "":
+                arrtime = entry[9][:5]
+                deptime = entry[6][:5]
+                if entry[22] =='local':
+                    deptime = converttoUTC(deptime,depairportinfo[0]['gmt_offset_single'])
+                    arrtime = converttoUTC(arrtime,arrairportinfo[0]['gmt_offset_single'])
+                decimalplaces = preferences[0]['decimalplaces']
+                #setup for future development of hh:ss instead of decimal. 
+                decimal=preferences[0]['decimal']
+                
+                if entry[7] != "" and entry[8] != "":
+                    offtime = entry[7][:5]
+                    ontime = entry[8][:5]
+                    if entry[22] =='local':
+                        offtime = converttoUTC(offtime,depairportinfo[0]['gmt_offset_single'])
+                        ontime = converttoUTC(ontime,arrairportinfo[0]['gmt_offset_single'])
+                    flighttime = calculatetimes(offtime,ontime,decimalplaces,decimal)
+                else:
+                    offtime = None
+                    ontime = None
+                    flighttime = None
+
+                
+                total= calculatetimes(deptime,arrtime,decimalplaces,decimal)
+                    #caculating distance between departure and arrival airports and then adding it to the instance
+                distance = int((great_circle((depairportinfo[0]['airport']['lat'],depairportinfo[0]['airport']['long']),(arrairportinfo[0]['airport']['lat'],arrairportinfo[0]['airport']['long'])).nm))
+                
+                if distance > 50:
+                    crosscountry = total
+                if entry[16] == "Y":
+                    pic = total
+                    fo = entry[19]
+                else:
+                    pic = None
+                    fo = None
+                if entry[17] == "Y":
+                    sic = total
+                    cap = entry[19]
+                else:
+                    sic = None
+                    cap = None
+                #getting the times all set correctly to work on the night time calculations
+                departuretime = datetime.combine(flightdate,datetime.strptime(deptime,'%H:%M').time())
+                #Adding a day if we go to the next UTC day. 
+                arrivaltime = datetime.combine(flightdate,datetime.strptime(arrtime,'%H:%M').time())
+                if arrivaltime.time() < departuretime.time():
+                    correctedarrivaltime = arrivaltime + timedelta(days=1)
+                else:
+                    correctedarrivaltime = arrivaltime
+
+                
+
+                nightcalc = nighttime(total,departuretime,correctedarrivaltime,depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],landings)
+                
+                if nightcalc == None:
+                    print('no')
+                    with open('./logbook/problems.csv','a') as outfile:
+                        write = csv.writer(outfile)
+                        problem = flightdate,count,total,entry[2],entry[4],departuretime,correctedarrivaltime,depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],landings
+                        write.writerow(problem)
+                    night = 0
+                    day = total  
+                    if landings > 0:
+                        nightlandings = 0
+                        daylandings = 1
+                    else:
+                        nightlandings = None
+                        daylandings = None  
+                else:
+                    night = nightcalc[0]
+                    day = nightcalc[1]
+                    if landings > 0:
+                        nightlandings = nightcalc[2]
+                        daylandings = nightcalc[3]
+                    else:
+                        nightlandings = None
+                        daylandings = None
+                
+            aircrafttype = NewPlaneMaster.objects.filter(nnumber=tailnumber).values()
+            
+                
+            workingdata = {
+            'userid' : 2,
+            'flightdate' : flightdate,
+            'aircraftId' : tailnumber,
+            'departure' : entry[2],
+            'route' : entry[3],
+            'arrival' : entry[4],
+            'flightnum' : entry[5],
+            'deptime' : deptime,
+            'arrtime' : arrtime,
+            'landings' : landings,
+            'imc' : entry[11],
+            'hood' : entry[12],
+            'iap' : entry[13],
+            'holdnumber' : entry[14],
+            'aircrafttype':aircrafttype[0]['aircraftmodel_id'],
+            'solo' : '',
+            'pic' : pic,
+            'sic' : sic,
+            'dual' : '',
+            'cfi' : '',
+            'crosscountry' : crosscountry,
+            'part135':'',
+            'total' : total,
+            'day' : day,
+            'daylandings' : daylandings,
+            'night' : night,
+            'nightlandings' : nightlandings,
+            'printcomments' : entry[18],
+            'instructor' : '',
+            'captain' : cap,
+            'firstofficer' : fo,
+            'student' : '',
+            'flightattendants' : entry[20],
+            'ftd' : '',
+            'ftdimc' : '',
+            'sim' : '',
+            'simimc' : '',
+            'pcatd' : '',
+            'pcimc' : '',
+            'passengercount' : entry[21],
+            'offtime':offtime,
+            'ontime':ontime,
+            'flighttime':flighttime,
+            'distance':distance
+            }
+            keys = workingdata.keys()
+            allentries.append(workingdata)
+            crosscountry = 0
+            leg=[]
+        
+            
+        
+    with open('./logbook/'+filename+'print.csv','w') as outfile:
+        write = csv.DictWriter(outfile,keys)
+        write.writerows(allentries)
+    timenow = datetime.now().strftime("%H:%M")
+    html = "<html><body>Good to go. {%timenow%} </body></html>" 
+    return HttpResponse(html)
 
 class EditEntry(LogbookEntry,UpdateView):
     

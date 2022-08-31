@@ -58,7 +58,7 @@ class FlightTime(models.Model):
     scheduleddeparttime = models.TimeField(blank=True,null=True)
     scheduledarrivaltime = models.TimeField(blank=True,null=True)
     scheduledblock = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
-    rotationid = models.IntegerField(blank=True,null=True)
+    rotationid = models.CharField(max_length=50,blank=True,null=True)
     scheduledflight = models.BooleanField(blank=True,null=True)
     aircrafttype = models.ForeignKey(AircraftModel,default ='B737-800',on_delete=models.SET_DEFAULT)
     flighttime = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)

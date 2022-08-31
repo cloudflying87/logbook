@@ -1,7 +1,8 @@
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
-os.environ['OPENBLAS_NUM_THREADS'] = '12'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 load_dotenv()
 
@@ -106,8 +107,14 @@ USE_TZ = True
 
 
 
+# Determine if in Production or Development
+if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
+    DEBUG = True 
+    #...       
+else:
+    DEBUG = False
+    #...
 
-DEBUG = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = ( os.path.join('static'), )
 # STATIC_ROOT = 'static/'

@@ -81,9 +81,11 @@ def getsuntimes(date,latitude,longitude):
 
 def suntime(airport,unixtime,datesearched):
     airportinfo = gettingairport(airport,unixtime)
-        
-    lat = float(airportinfo['airport']['lat'])
-    long = float(airportinfo['airport']['long'])
+    try:
+        lat = float(airportinfo['airport']['lat'])
+        long = float(airportinfo['airport']['long'])
+    except:
+        print(airportinfo)
     srsttimes = getsuntimes(datesearched,lat,long)
     # sunriseUTC = srsttimes['sunrise']
     

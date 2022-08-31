@@ -5,6 +5,7 @@
 {% include 'logbook/navbar.html' %} 
 <a class="nav-link" href="{% url 'googleschedule' %}"> Google Calendar Sync</a>
 <body class = "text-center">
+        <h2>This Form currently does nothing</h2>
         <form method=POST action="{% url 'deltaschedule' %}" class="form-main">
                 {% csrf_token %}
                 {% load crispy_forms_tags %}

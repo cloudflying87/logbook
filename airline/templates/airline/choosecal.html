@@ -1,0 +1,16 @@
+{% extends 'airline/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %} 
+<ul>    
+        <h2>Choose Calendar to Import from</h2>
+        {% for item in added %}
+                
+            <a href="setcalid/{{item.id}}">  {{ item.name }} </a>
+            <br>
+        {% endfor %}
+        <br>
+        
+</ul>
+{% endblock %}

@@ -3,6 +3,7 @@
 *.pot
 *.pyc
 **/fixtures
+**/migrations
 /airline/credentials.json
 /airline/token.json
 token.json

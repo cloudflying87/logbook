@@ -19,6 +19,13 @@ class Users(models.Model):
     defaultairplane = models.ForeignKey(AircraftModel,default='',blank=True,null=True, on_delete=models.SET_DEFAULT)
     airlineform = models.BooleanField(blank=True,null=True)
     zulu = models.BooleanField(blank=True,null=True,default=True)
+    token = models.CharField(blank=True, max_length=300)
+    refresh_token = models.CharField(blank=True,null=True, max_length=300)
+    token_uri = models.CharField(blank=True,null=True, max_length=300)
+    client_id = models.CharField(blank=True,null=True, max_length=300)
+    client_secret = models.CharField(blank=True,null=True, max_length=300)
+    scopes = models.CharField(blank=True,null=True, max_length=300)
+    calendarid = models.CharField(blank=True,null=True, max_length=300)
 
     # def __str__(self):
     #     return self
