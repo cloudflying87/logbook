@@ -56,7 +56,7 @@ def CalAuthView():
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         client_secrets_file=CLIENT_SECRETS_FILE,
         scopes=SCOPES)
-    print(sys.argv,len(sys.argv))
+    print(sys.argv,len(sys.argv),'test')
     if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
         flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
         
