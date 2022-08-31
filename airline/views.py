@@ -61,7 +61,7 @@ def CalAuthView(request):
         flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
         print("authflow")
     else:
-        flow.redirect_uri = 'http://logbook.flyhomemn.com/airline/oauth2callback/'
+        flow.redirect_uri = 'https://logbook.flyhomemn.com/airline/oauth2callback/'
     auth_flow = cal_base()
     auth_url = auth_flow.get_authenticated_service()
     
@@ -77,7 +77,7 @@ class cal_base:
             flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
             
         else:
-            flow.redirect_uri = 'http://logbook.flyhomemn.com/airline/oauth2callback/'
+            flow.redirect_uri = 'https://logbook.flyhomemn.com/airline/oauth2callback/'
 
         authorization_url, state = flow.authorization_url(access_type='offline',prompt='consent')
         state = state
@@ -94,8 +94,8 @@ class Oauth2CallbackView(View):
             
             redirecturi = 'http://localhost:8000/airline/'
         else:
-            flow.redirect_uri = 'http://logbook.flyhomemn.com/airline/oauth2callback/'
-            redirecturi = 'http://logbook.flyhomemn.com/airline/'
+            flow.redirect_uri = 'https://logbook.flyhomemn.com/airline/oauth2callback/'
+            redirecturi = 'https://logbook.flyhomemn.com/airline/'
 
         #save the google credentials to the database
         flow.fetch_token(code=self.request.GET.get('code'))
