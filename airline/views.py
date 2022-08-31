@@ -59,7 +59,7 @@ def CalAuthView(request):
     print(sys.argv,len(sys.argv),'test')
     if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
         flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
-        print("authflow")
+        
     else:
         flow.redirect_uri = 'https://logbook.flyhomemn.com/airline/oauth2callback/'
     auth_flow = cal_base()
@@ -127,7 +127,7 @@ def workdeltschedulegoogle(request):
     CalAuthView(request)
     user = Users.objects.get(user_id=getuserid())
     calid = user.calendarid
-    print(user,calid,'test')
+    print('calendarid',calid)
     credentials = Credentials(
         token=user.token,
         refresh_token = user.refresh_token,
@@ -135,9 +135,9 @@ def workdeltschedulegoogle(request):
         client_id = user.client_id,
         client_secret= user.client_secret)
         # scopes = user.scopes)
-    print(user.token_uri)
+    
     try:
-        print('calendarlist')
+        
         service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials)
 
         # Call the Calendar API
@@ -146,7 +146,7 @@ def workdeltschedulegoogle(request):
         count = 0
         page_token = None
         if calid == '':
-            
+            print('calendarlist')
             while True:
                 print('firstif')
                 calendar_list = service.calendarList().list(pageToken=page_token).execute()
