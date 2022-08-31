@@ -47,25 +47,21 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 
 #for the google auth to see the calendar information 
-def CalAuthView():
+def CalAuthView(request):
     CLIENT_SECRETS_FILE = './airline/credentials.json'
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
     API_SERVICE_NAME = 'calendar'
     API_VERSION = 'v3'
-    
+    print("authflowDD")
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         client_secrets_file=CLIENT_SECRETS_FILE,
         scopes=SCOPES)
     print(sys.argv,len(sys.argv),'test')
     if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
         flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
-        
+        print("authflow")
     else:
         flow.redirect_uri = 'http://logbook.flyhomemn.com/airline/oauth2callback/'
-        print("authflow")
-    
-    
-
     auth_flow = cal_base()
     auth_url = auth_flow.get_authenticated_service()
     
@@ -83,7 +79,7 @@ class cal_base:
         else:
             flow.redirect_uri = 'http://logbook.flyhomemn.com/airline/oauth2callback/'
 
-        authorization_url, state = flow.authorization_url(access_type='offline')
+        authorization_url, state = flow.authorization_url(access_type='offline',prompt='consent')
         state = state
         return authorization_url
 
@@ -128,7 +124,7 @@ def setcalid(request,id):
 #after the calendar id is choosen then 
 #if calendar id is already set then it goes to retreiving the information
 def workdeltschedulegoogle(request):
-    CalAuthView()
+    CalAuthView(request)
     user = Users.objects.get(user_id=getuserid())
     calid = user.calendarid
     print(user,calid,'test')
@@ -139,6 +135,7 @@ def workdeltschedulegoogle(request):
         client_id = user.client_id,
         client_secret= user.client_secret)
         # scopes = user.scopes)
+    print(user.token_uri)
     try:
         print('calendarlist')
         service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials)
@@ -149,9 +146,11 @@ def workdeltschedulegoogle(request):
         count = 0
         page_token = None
         if calid == '':
-            print('firstif')
+            
             while True:
+                print('firstif')
                 calendar_list = service.calendarList().list(pageToken=page_token).execute()
+                print(calendar_list)
 
                 # print(calendar_list['items'])
                 for calendar_list_entry in calendar_list['items']:
