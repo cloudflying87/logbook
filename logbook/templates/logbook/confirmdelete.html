@@ -1,0 +1,18 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+    <h1>Delete View</h1>
+    
+
+<form method="post">{% csrf_token %}
+    Are you sure you want to delete {{flight.flightdate }} Flight Number: {{flight.flightnum}}
+    Depart: {{flight.departure}} Arrival: {{flight.arrival}} Scheduled: {{flight.scheduledflight}} {{flight.aircraftId}} {{flight.aircrafttype}}?
+    
+    
+
+    <input type="submit" value="Confirm">
+</form>
+ 
+{% endblock%}

@@ -1,10 +1,22 @@
-{% extends 'airline/base.html' %}
+{% extends 'logbook/base.html' %}
 
 
 {% block content %}
 {% include 'logbook/navbar.html' %} 
-<a class="nav-link" href="{% url 'googleschedule' %}"> Google Calendar Sync</a>
-<a class="nav-link" href="{% url 'cal_auth' %}">Auth Flow</a>
+<a class="nav-link" href="{% url 'cal_auth' %}">Start Here, This should work everytime now</a>
+<a class="nav-link" href="{% url 'googleschedule' %}"> Choose Calendar</a>
+<a class="nav-link" href="{% url 'importingevents' %}"> Import Events</a>
+
+
+<h2>Scheduled Flights</h2>
+        {% for flight in flight_list %}
+        
+                <a href="../logbook/view/{{flight.id}}"> {{flight.flightdate }} </a>  {{ flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.flightnum}} {{flight.total}} <a href="../logbook/edit/{{flight.id}}"> <i class="fa fa-pencil"></i></a><a href="../logbook/delete/{{flight.id}}"><i class='fa fa-trash' style='color:red'></i> <br/>
+        <hr/>
+
+                {% empty %}
+                <li>No objects yet.</li>
+        {% endfor %}
 
 
 {% endblock %}

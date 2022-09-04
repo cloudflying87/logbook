@@ -4,11 +4,11 @@
 {% block content %}
 {% include 'logbook/navbar.html' %}    
     <h1>Flight View</h1>
-
-    Date: {{flight.flightdate}} Flight Number: {{flight.flightnum}}
+    
+    <a href="../edit/{{flight.id}}"> {{flight.flightdate }} </a> Flight Number: {{flight.flightnum}}
     Depart: {{flight.departure}} Arrival: {{flight.arrival}} Scheduled: {{flight.scheduledflight}} {{flight.aircraftId}} {{flight.aircrafttype}}
     <br>Scheduled Times
-    <br>Depart: {{flight.scheduleddeparttime}} Arrival: {{flight.scheduledarrivaltime}} Block: {{flight.scheduledblock}}
+    <br>Depart: <class = time2>{{flight.scheduleddeparttime}}</class> Arrival: {{flight.scheduledarrivaltime}} Block: {{flight.scheduledblock}}
     <br> Actual Times
     <br> Out: {{flight.deptime}} Off:
     {{flight.offtime}} On: {{flight.ontime}} In: {{flight.arrtime}}
@@ -18,8 +18,8 @@
     <br> PIC: {{flight.pic}} SIC: {{flight.sic}} CFI: {{flight.cfi}} Dual: {{flight.dual}}
     <br>Instrument Actual: {{flight.imc}} Hood:{{flight.hood}} IAP: {{flight.iap}}
     <br>Instructor: {{flight.instructor}} Captain: {{flight.captain}}
-    
-
+    <br>
+    <a href="../delete/{{flight.id}}"> Delete </a>
     
  
 {% endblock%}

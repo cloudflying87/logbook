@@ -18,7 +18,7 @@ from datetime import datetime,timedelta
 import time
 import airport
 from airport.views import gettingairport
-from django.views.generic import FormView, View
+from django.views.generic import FormView,View,ListView
 from airline.models import AirlineSchedule
 import datetime
 import os.path
@@ -52,11 +52,11 @@ def CalAuthView(request):
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
     API_SERVICE_NAME = 'calendar'
     API_VERSION = 'v3'
-    print("authflowDD")
+    
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         client_secrets_file=CLIENT_SECRETS_FILE,
         scopes=SCOPES)
-    print(sys.argv,len(sys.argv),'test')
+    
     if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
         flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
         
@@ -79,24 +79,29 @@ class cal_base:
         else:
             flow.redirect_uri = 'https://logbook.flyhomemn.com/airline/oauth2callback/'
 
-        authorization_url, state = flow.authorization_url(access_type='offline',prompt='consent')
+        authorization_url, state = flow.authorization_url(access_type='offline')
         state = state
         return authorization_url
 
 #for the google auth to see the calendar information 
 class Oauth2CallbackView(View):
     def get(self, request, *args, **kwargs):
-        
+        user = Users.objects.get(user_id=getuserid())
+        calid = user.calendarid
         flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
             CLIENT_SECRETS_FILE, scopes=SCOPES,state=state)
         if (len(sys.argv) >= 2 and sys.argv[1] == 'runserver'):
             flow.redirect_uri = 'http://localhost:8000/airline/oauth2callback/'
-            
-            redirecturi = 'http://localhost:8000/airline/'
+            if calid != None:
+                redirecturi = 'http://localhost:8000/airline/import'
+            else:
+                redirecturi = 'http://localhost:8000/airline/googleschedule'
         else:
             flow.redirect_uri = 'https://logbook.flyhomemn.com/airline/oauth2callback/'
-            redirecturi = 'https://logbook.flyhomemn.com/airline/'
-
+            if calid !=None:
+                redirecturi = 'https://logbook.flyhomemn.com/airline/import'
+            else:
+                redirecturi = 'https://logbook.flyhomemn.com/airline/googleschedule'
         #save the google credentials to the database
         flow.fetch_token(code=self.request.GET.get('code'))
         credentials = flow.credentials
@@ -113,21 +118,14 @@ class Oauth2CallbackView(View):
 
 def setcalid(request,id):
     user = Users.objects.get(user_id=getuserid())
-    print('set')
     user.calendarid = id
     user.save()
-    workdeltschedulegoogle(request)
-    return(request)
     
-#once the authentecation is complete we come here. First get
-#the calendarid if it is not already been choosen
-#after the calendar id is choosen then 
-#if calendar id is already set then it goes to retreiving the information
-def workdeltschedulegoogle(request):
-    CalAuthView(request)
+    return render(request, 'airline/schedule.html')
+def getcredentialsfromdb():
     user = Users.objects.get(user_id=getuserid())
     calid = user.calendarid
-    print('calendarid',calid)
+    
     credentials = Credentials(
         token=user.token,
         refresh_token = user.refresh_token,
@@ -135,75 +133,79 @@ def workdeltschedulegoogle(request):
         client_id = user.client_id,
         client_secret= user.client_secret)
         # scopes = user.scopes)
+    return(calid,credentials)
+#once the authentecation is complete we come here. First get
+#the calendarid if it is not already been choosen
+#after the calendar id is choosen then 
+#if calendar id is already set then it goes to retreiving the information
+def workdeltschedulegoogle(request):
     
-    try:
+    
+    credentials = getcredentialsfromdb()
         
-        service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials)
+    service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials[1])
 
-        # Call the Calendar API
-        now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates   
-        added = []
-        count = 0
-        page_token = None
-        if calid == '' or calid == None:
-            print('calendarlist')
-            while True:
-                print('firstif')
-                calendar_list = service.calendarList().list(pageToken=page_token).execute()
-                print(calendar_list)
+    # Call the Calendar API
+    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates   
+    added = []
+    count = 0
+    page_token = None
+        
+    while True:
+        calendar_list = service.calendarList().list(pageToken=page_token).execute()
+        for calendar_list_entry in calendar_list['items']:
+            count = count + 1
+            numcal = {'id':calendar_list_entry['id'],'name':calendar_list_entry['summary']}
+            added.append(numcal)
+            page_token = calendar_list.get('nextPageToken')
+        if not page_token:
+            break
+    return render(request, 'airline/choosecal.html', {'added': added})
 
-                # print(calendar_list['items'])
-                for calendar_list_entry in calendar_list['items']:
-                    count = count + 1
-                    numcal = {'id':calendar_list_entry['id'],'name':calendar_list_entry['summary']}
-                    added.append(numcal)
-                    page_token = calendar_list.get('nextPageToken')
-                if not page_token:
-                    break
-            return render(request, 'airline/choosecal.html', {'added': added})
+def importingevents(request):
+        
+    credentials = getcredentialsfromdb()
+        
+    service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials[1])
+    # here is retreving calendar events and then working them correctly to get everything in the database. 
+    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+    calendarId=credentials[0]
+    print(calendarId)
+    page_token = None
+    trip = []
+    monthsum = []
+    while True:
+        events = service.events().list(calendarId=calendarId, pageToken=page_token,timeMin=now).execute()
+        for event in events['items']:
+            summary = re.sub(r'\n','',event['summary'])
+            tripnum = summary[0:4]
+            triptimes = summary[-11:]
+            description = event['description']
+            descriptionsplit = description.split()
 
-        else:
-            print('eventlist')
-            # here is retreving calendar events and then working them correctly to get everything in the database. 
-            now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-            calendarId=calid
-            page_token = None
-            trip = []
-            monthsum = []
-            while True:
-                events = service.events().list(calendarId=calendarId, pageToken=page_token,timeMin=now).execute()
-                for event in events['items']:
-                    summary = re.sub(r'\n','',event['summary'])
-                    tripnum = summary[0:4]
-                    triptimes = summary[-11:]
-                    description = event['description']
-                    descriptionsplit = description.split()
+            for count,item in enumerate(descriptionsplit):
+                match = re.search("[0-3][0-9][A-Z][A-Z][A-Z]",item)
+                if match:
+                        flightdate = item
+                if item[0:2] =="DL":
+                    flightnum = item[2:7]
+                    depart = descriptionsplit[count+1][:3]
+                    arr = descriptionsplit[count+1][-3:]
+                    deptime = descriptionsplit[count+2][:5]
+                    arrtime = descriptionsplit[count+2][-5:]
+                    leg = [flightdate,flightnum,depart,arr,deptime,arrtime,tripnum]
+                    trip.append(leg)
+                    leg=[]
+            monthsum.append(trip)  
+            trip=[]      
+        page_token = events.get('nextPageToken')
+        if not page_token:
+            break
 
-                    for count,item in enumerate(descriptionsplit):
-                        match = re.search("[0-3][0-9][A-Z][A-Z][A-Z]",item)
-                        if match:
-                                flightdate = item
-                        if item[0:2] =="DL":
-                            flightnum = item[2:7]
-                            depart = descriptionsplit[count+1][:3]
-                            arr = descriptionsplit[count+1][-3:]
-                            deptime = descriptionsplit[count+2][:5]
-                            arrtime = descriptionsplit[count+2][-5:]
-                            leg = [flightdate,flightnum,depart,arr,deptime,arrtime,tripnum]
-                            trip.append(leg)
-                            leg=[]
-                    monthsum.append(trip)  
-                    trip=[]      
-                page_token = events.get('nextPageToken')
-                if not page_token:
-                    break
+    schedulelist = modifiyingschedule(monthsum)
+    
+    return render(request, 'airline/masterschedule.html', {'added': schedulelist[0],'notadded':schedulelist[1]}) 
 
-            schedulelist = modifiyingschedule(monthsum)
-            
-            return render(request, 'airline/masterschedule.html', {'added': schedulelist[0],'notadded':schedulelist[1]}) 
-
-    except HttpError as error:
-        print('An error occurred: %s' % error)
 
 def modifiyingschedule(schedule):
     #getting all of the retreived calendar information ready to go to the database. 
@@ -256,28 +258,15 @@ def modifiyingschedule(schedule):
                 notadded.append(leg)
                     
     return added,notadded
-class DeltaScheduleEntry(FormView):
+class DeltaScheduleEntry(ListView):
     
+    model = FlightTime
     template_name = 'airline/schedule.html'
-    form_class = AirlineScheduleEntry
-    success_url = '/airline'
+    context_object_name = "flight_list"
 
-    
-    def form_valid(self,form):
-        linebyline = []
-        lines = []
-        instance = form.save(commit=False)
-        rawtrip = form['rawdata'].value()
-        schedulesp = rawtrip.split()
-        for count,line in enumerate(schedulesp):
-            if line == '<br':
-                linebyline.append(lines)
-                lines = []
-            
-            else:
-                lines.append(line)
-        
-        return render('airline/editschedule.html', {'schedule':schedulesp})
+    def get_queryset(self, *args, **kwargs):
+        logbookdisplay = FlightTime.objects.all().filter(userid=getuserid(),scheduledflight=True).order_by('flightdate')
+        return logbookdisplay
 
 # def workdeltschedulegoogle2(request):
 # #original working from the google example.
