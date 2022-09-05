@@ -56,6 +56,7 @@ class LogbookDisply(ListView):
 
 def converttoUTC(time,timezone):
     #converting local times to utc returns a string
+    
     timeobject = datetime.strptime(time, '%H:%M')
     if timezone < 0:
         timecorrection = timeobject + timedelta(hours=abs(timezone))
@@ -168,10 +169,10 @@ def addingtimeanddate(flightdate,starttime,utcoffset):
     
     return fixeddatetime
 def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunrisen,arrsunsetp,arrsunrise,arrsunset,arrsunrisen,landing):
-
+    formula = ''
     #all night time 
     if (deptime > depsunset and deptime < depsunrisen and arrtime > arrsunset and arrtime < arrsunrisen) or (deptime > depsunsetp and deptime < depsunrise and arrtime > arrsunsetp and arrtime < arrsunrise): 
-        # print('firstallnight')
+        formula = 'allnight'
         nighttime = totaltime 
         daytime = None
         if landing > 0: 
@@ -183,7 +184,7 @@ def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunri
 
     #all day time 
     if deptime <= depsunset and deptime >= depsunrise and arrtime <= arrsunset and arrtime >= arrsunrise: 
-        
+        formula = 'daytime'
         nighttime = None 
         daytime = totaltime 
         if landing > 0: 
@@ -195,33 +196,46 @@ def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunri
 
     #departing at night landing during the day 
     if deptime <= depsunrise and arrtime <= arrsunset: 
+        formula = 'nighttoday'
+        
         if (depsunrise - deptime) < (arrtime - arrsunrise):
-            nightcalc = (depsunrise - deptime)
-        else: 
-            nightcalc = arrtime - arrsunrise
+            nightcalc = depsunrise - deptime
+        else:
+            nightcalc = arrtime - arrsunrise 
+            
+
         nighttime = round((((nightcalc.total_seconds())/60)/60),2)
         
         landingtime = 'day' 
         check = checkdaynight(nighttime,totaltime,landing,landingtime) 
-        # print(check)
         return check
+
     #departing during the day landing at night 
     if deptime <= depsunset and arrtime >= arrsunset: 
-        # print('daydepart')
-        nightcalc = arrtime - arrsunset 
+        formula = 'daytonight'
+        if (depsunset-deptime) < (arrsunset-arrtime):
+            nightcalc = depsunset-deptime 
+        else:
+            nightcalc = arrtime - arrsunset
+            
+            
+
         nighttime = round((((nightcalc.total_seconds())/60)/60),2)
+        
         landingtime = 'night' 
         check = checkdaynight(nighttime,totaltime,landing,landingtime)
         return check
 
+    #late departure into the sunrise of the next day
     if deptime <= depsunrisen and arrtime >= arrsunrisen: 
-        # print('nightdepart',deptime,depsunrise,depsunset,arrtime,arrsunset)
+        formula = 'latedeparture'
+
         nightcalc = (arrtime - arrsunrisen)
         nighttime = round((((nightcalc.total_seconds())/60)/60),2)
         
         landingtime = 'day' 
         check = checkdaynight(nighttime,totaltime,landing,landingtime) 
-        # print(check)
+        
         return check
 
 class LogbookEntry(FormView):
@@ -243,7 +257,7 @@ class LogbookEntry(FormView):
         flightdate = datetime.strptime(form['flightdate'].value(),'%Y-%m-%d')
         unixdate = time.mktime(flightdate.timetuple())
         #Getting departure airport information
-        print(form['departure'].value())
+        
         if form['departure'].value() != '':
             depairport = form['departure'].value()
             depairportinfo = gettingairportinfo(depairport,unixdate,flightdate)
@@ -301,16 +315,20 @@ class LogbookEntry(FormView):
                     if distance > 50:
                         instance.crosscountry = total
                 #getting the times all set correctly to work on the night time calculations
-                departuretime = datetime.combine(flightdate,datetime.strptime(deptime,'%H:%M').time())
-                #Adding a day if we go to the next UTC day. 
-                arrivaltime = datetime.combine(flightdate,datetime.strptime(arrtime,'%H:%M').time())
-                if arrivaltime.time() < departuretime.time():
-                    correctedarrivaltime = arrivaltime + timedelta(days=1)
-                else:
-                    correctedarrivaltime = arrivaltime
-
-                nightcalc = nighttime(total,departuretime,correctedarrivaltime,depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],landings)
+                departuretime = addingtimeanddate(flightdate,deptime,depairportinfo[0]['gmt_offset_single'])
                 
+                #if departure date gets one added to it then automatically add it to the arrival date, else run the formula on arrival date separately
+                
+                if departuretime>flightdate:
+                    arrivaltime = datetime.combine((flightdate + timedelta(days=1)),datetime.strptime(arrtime,'%H:%M').time())
+                else:
+                    arrivaltime = addingtimeanddate(flightdate,arrtime,arrairportinfo[0]['gmt_offset_single'])
+                
+                #getting the previous sunset and the nextday sunrise, so I will know the times for both nights
+                extrasuntimesdep = getextrasuntimes(depairport,flightdate)
+                extrasuntimesarr = getextrasuntimes(arrairport,flightdate)
+
+                nightcalc = nighttime(total,departuretime,arrivaltime,extrasuntimesdep[0],depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],extrasuntimesdep[1],extrasuntimesarr[0],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],extrasuntimesarr[1],landings)
                 
                 instance.night = nightcalc[0]
                 instance.day = nightcalc[1]
@@ -324,7 +342,7 @@ class LogbookEntry(FormView):
 def reworktimes(request):
     currentuser = str(get_current_user())
     userid=User.objects.get(username=currentuser).pk
-    filename = 'airline'
+    filename = 'airlinecurrent'
     preferences = Users.objects.filter(user_id=userid).values()
     with open('./logbook/fixtures/'+filename+'.csv','r') as read_file:
         logbook = csv.reader(read_file)
@@ -334,6 +352,7 @@ def reworktimes(request):
             if (count/500).is_integer():
                 print('still working',count)
             flightdatetotal = datetime.strptime(entry[0],'%Y-%m-%d %H:%M:%S')
+            # flightdatetotal = datetime.strptime(entry[0],'%m/%d/%Y %H:%M:%S')
             flightdate = flightdatetotal.date()
             unixdate = time.mktime(flightdate.timetuple())
             tailnumber = entry[1]
@@ -400,29 +419,21 @@ def reworktimes(request):
 
                 nightcalc = nighttime(total,departuretime,arrivaltime,extrasuntimesdep[0],depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],extrasuntimesdep[1],extrasuntimesarr[0],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],extrasuntimesarr[1],landings)
                 
-                if nightcalc == None:
+                
                     
-                    with open('./logbook/fixtures/problems.csv','a') as outfile:
-                        write = csv.writer(outfile)
-                        problem = flightdate,count,total,entry[2],entry[4],departuretime,deptime,arrivaltime,arrtime,depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],landings
-                        write.writerow(problem)
-                    night = 0
-                    day = total  
-                    if landings > 0:
-                        nightlandings = 0
-                        daylandings = 1
-                    else:
-                        nightlandings = None
-                        daylandings = None  
+                # with open('./logbook/fixtures/check.csv','a') as outfile:
+                #     write = csv.writer(outfile)
+                #     problem = count,flightdate,total,entry[2],entry[4],'night',nightcalc[0],'day',nightcalc[1],'',departuretime,extrasuntimesdep[0],depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],extrasuntimesdep[1],'',arrivaltime,extrasuntimesarr[0],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],extrasuntimesarr[1]
+                #     write.writerow(problem) 
+                
+                night = nightcalc[0]
+                day = nightcalc[1]
+                if landings > 0:
+                    nightlandings = nightcalc[2]
+                    daylandings = nightcalc[3]
                 else:
-                    night = nightcalc[0]
-                    day = nightcalc[1]
-                    if landings > 0:
-                        nightlandings = nightcalc[2]
-                        daylandings = nightcalc[3]
-                    else:
-                        nightlandings = None
-                        daylandings = None
+                    nightlandings = None
+                    daylandings = None
                 
             aircrafttype = NewPlaneMaster.objects.filter(nnumber=tailnumber).values()
             
