@@ -11,8 +11,12 @@
 <h2>Scheduled Flights</h2>
         {% for flight in flight_list %}
         
-                <a href="../logbook/view/{{flight.id}}"> {{flight.flightdate }} </a>  {{ flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.flightnum}} {{flight.total}} <a href="../logbook/edit/{{flight.id}}"> <i class="fa fa-pencil"></i></a><a href="../logbook/delete/{{flight.id}}"><i class='fa fa-trash' style='color:red'></i> <br/>
-        <hr/>
+                <a href="../logbook/view/{{flight.id}}"> {{flight.flightdate }} </a>  {{ flight.aircraftId}} {{flight.departure}} {{flight.arrival}} {{flight.flightnum}} {{flight.total}} <a href="../logbook/edit/{{flight.id}}"> <i class="fa fa-pencil"></i></a>
+                <br/>
+
+                <a href="../logbook/delete/{{flight.id}}"><i class='fa fa-trash' style='color:red'></i>
+                        
+                <hr/>
 
                 {% empty %}
                 <li>No objects yet.</li>

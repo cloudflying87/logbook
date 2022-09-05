@@ -1,10 +1,6 @@
-from audioop import cross
 import csv
-import json
-import sys
 from unicodedata import decimal
 from django.http import HttpResponse
-from contextlib import nullcontext
 from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
 from django_currentuser.middleware import (
@@ -90,7 +86,18 @@ def gettingairportinfo(airportcode,unixtime,date):
     airportinfo = gettingairport(airportcode,unixtime)
     sunsettimes = suntime(airportcode,unixtime,date)
     return airportinfo,sunsettimes
-    
+
+def getextrasuntimes(airportcode,date):
+    flightdate = date - timedelta(days=1)
+    unixdate = time.mktime(flightdate.timetuple())
+    suntimes = suntime(airportcode,unixdate,flightdate)
+    previoussunset = suntimes['sunsetUTC']
+    flightdate = date + timedelta(days=1)
+    unixdate = time.mktime(flightdate.timetuple())
+    suntimes = suntime(airportcode,unixdate,flightdate)
+    nextsunrise = suntimes['sunriseUTC']
+
+    return [previoussunset,nextsunrise]
 #making sure night time makes sense 
 def checkdaynight(night,total,landing,landingtime):
 
@@ -160,10 +167,10 @@ def addingtimeanddate(flightdate,starttime,utcoffset):
     fixeddatetime = datetime.combine(zuludate,datetime.strptime(starttime,'%H:%M').time())
     
     return fixeddatetime
-def nighttime(totaltime,deptime,arrtime,depsunrise,depsunset,arrsunrise,arrsunset,landing):
-    
+def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunrisen,arrsunsetp,arrsunrise,arrsunset,arrsunrisen,landing):
+
     #all night time 
-    if deptime > depsunset and deptime < depsunrise and arrtime > arrsunset and arrtime < arrsunrise: 
+    if (deptime > depsunset and deptime < depsunrisen and arrtime > arrsunset and arrtime < arrsunrisen) or (deptime > depsunsetp and deptime < depsunrise and arrtime > arrsunsetp and arrtime < arrsunrise): 
         # print('firstallnight')
         nighttime = totaltime 
         daytime = None
@@ -175,7 +182,7 @@ def nighttime(totaltime,deptime,arrtime,depsunrise,depsunset,arrsunrise,arrsunse
             return nighttime,daytime
 
     #all day time 
-    if deptime < depsunset and deptime > depsunrise and arrtime < arrsunset and arrtime > arrsunrise: 
+    if deptime <= depsunset and deptime >= depsunrise and arrtime <= arrsunset and arrtime >= arrsunrise: 
         
         nighttime = None 
         daytime = totaltime 
@@ -188,8 +195,10 @@ def nighttime(totaltime,deptime,arrtime,depsunrise,depsunset,arrsunrise,arrsunse
 
     #departing at night landing during the day 
     if deptime <= depsunrise and arrtime <= arrsunset: 
-        # print('nightdepart',deptime,depsunrise,depsunset,arrtime,arrsunset)
-        nightcalc = (depsunrise - deptime)
+        if (depsunrise - deptime) < (arrtime - arrsunrise):
+            nightcalc = (depsunrise - deptime)
+        else: 
+            nightcalc = arrtime - arrsunrise
         nighttime = round((((nightcalc.total_seconds())/60)/60),2)
         
         landingtime = 'day' 
@@ -205,18 +214,15 @@ def nighttime(totaltime,deptime,arrtime,depsunrise,depsunset,arrsunrise,arrsunse
         check = checkdaynight(nighttime,totaltime,landing,landingtime)
         return check
 
-    # #all night but needs to look at the next day to work
-    # if deptime >= depsunset and arrtime >= arrsunset:
-    #     if arrtime <= arrsunrise + timedelta(days = 1):
-    #         print('nightcatch')
-    #         nighttime = totaltime 
-    #         daytime = None
-    #         if landing > 0: 
-    #             nightlanding = landing 
-    #             daylanding = None
-    #             return nighttime,daytime,nightlanding,daylanding     
-    #         else:
-    #             return nighttime,daytime
+    if deptime <= depsunrisen and arrtime >= arrsunrisen: 
+        # print('nightdepart',deptime,depsunrise,depsunset,arrtime,arrsunset)
+        nightcalc = (arrtime - arrsunrisen)
+        nighttime = round((((nightcalc.total_seconds())/60)/60),2)
+        
+        landingtime = 'day' 
+        check = checkdaynight(nighttime,totaltime,landing,landingtime) 
+        # print(check)
+        return check
 
 class LogbookEntry(FormView):
     
@@ -381,18 +387,18 @@ def reworktimes(request):
                     cap = None
                 #getting the times all set correctly to work on the night time calculations
                 departuretime = addingtimeanddate(flightdate,deptime,depairportinfo[0]['gmt_offset_single'])
-                # departuretime = datetime.combine(flightdate,datetime.strptime(deptime,'%H:%M').time())
-                #Adding a day if we go to the next UTC day. 
-                # arrivaltime = datetime.combine(flightdate,datetime.strptime(arrtime,'%H:%M').time())
-                arrivaltime = addingtimeanddate(flightdate,arrtime,arrairportinfo[0]['gmt_offset_single'])
-                # if arrivaltime.time() < departuretime.time():
-                #     correctedarrivaltime = arrivaltime + timedelta(days=1)
-                # else:
-                #     correctedarrivaltime = arrivaltime
-
                 
+                #if departure date gets one added to it then automatically add it to the arrival date, else run the formula on arrival date separately
+                if departuretime.date()>flightdate:
+                    arrivaltime = datetime.combine((flightdate + timedelta(days=1)),datetime.strptime(arrtime,'%H:%M').time())
+                else:
+                    arrivaltime = addingtimeanddate(flightdate,arrtime,arrairportinfo[0]['gmt_offset_single'])
+                
+                #getting the previous sunset and the nextday sunrise, so I will know the times for both nights
+                extrasuntimesdep = getextrasuntimes(entry[2],flightdate)
+                extrasuntimesarr = getextrasuntimes(entry[4],flightdate)
 
-                nightcalc = nighttime(total,departuretime,arrivaltime,depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],landings)
+                nightcalc = nighttime(total,departuretime,arrivaltime,extrasuntimesdep[0],depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],extrasuntimesdep[1],extrasuntimesarr[0],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],extrasuntimesarr[1],landings)
                 
                 if nightcalc == None:
                     
