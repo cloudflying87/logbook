@@ -1,0 +1,12 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Report Page</h1>
+  Total Time {{flight.total.total}}<br>
+  Day {{flight.total.day}} Landings {{ flight.total.daylandings}}<br>
+  Night {{flight.total.night}} Landings {{flight.total.nightlandings}}<br>
+  Total Flights {{flight.total.totalflights}}
+ 
+{% endblock%}

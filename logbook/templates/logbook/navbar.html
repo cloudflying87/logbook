@@ -12,7 +12,7 @@
             <a class="nav-link active" aria-current="page" href="{% url 'logbookdisplay' %}">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'logbookhome' %}">Logbook</a>
+            <a class="nav-link" href="{% url 'logbookhome' %}">Log Flight</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{% url 'aircrafthome' %}">Aircraft</a>
@@ -21,10 +21,10 @@
             <a class="nav-link" href="{% url 'airporthome' %}">Airports</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'logbookdisplay' %}">Reports</a>
+            <a class="nav-link" href="{% url 'reporttotals' %}">Reports</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'deltaschedule' %}">Airline</a>
+            <a class="nav-link" href="{% url 'deltaschedule' %}">Scheduled Flights</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/user/{{user.id}}/update">User Preferences</a>

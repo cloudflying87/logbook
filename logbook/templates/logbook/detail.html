@@ -5,8 +5,7 @@
 {% include 'logbook/navbar.html' %}    
     <h1>Flight View</h1>
     
-    <a href="../edit/{{flight.id}}"> {{flight.flightdate }} </a> Flight Number: {{flight.flightnum}}
-    Depart: {{flight.departure}} Arrival: {{flight.arrival}} Scheduled: {{flight.scheduledflight}} {{flight.aircraftId}} {{flight.aircrafttype}}
+    <a href="../edit/{{flight.id}}"> {{flight.flightdate }} </a>  {{flight.aircraftId}} {{flight.departure}} - {{flight.arrival}} {{flight.flightnum}} {{flight.aircrafttype}}
     <br>Scheduled Times
     <br>Depart: <class = time2>{{flight.scheduleddeparttime}}</class> Arrival: {{flight.scheduledarrivaltime}} Block: {{flight.scheduledblock}}
     <br> Actual Times
@@ -14,11 +13,10 @@
     {{flight.offtime}} On: {{flight.ontime}} In: {{flight.arrtime}}
     <br> Pilot Times 
     <br>Total: {{flight.total}} Day: {{flight.day}} Landings: {{flight.daylandings}} Night: {{flight.night}} CX: {{flight.crosscountry}}
-    <br> Passengers: {{flight.passengercount}} Distance: {{flight.distance}} Rotation: {{flight.rotationid}}
-    <br> PIC: {{flight.pic}} SIC: {{flight.sic}} CFI: {{flight.cfi}} Dual: {{flight.dual}}
-    <br>Instrument Actual: {{flight.imc}} Hood:{{flight.hood}} IAP: {{flight.iap}}
-    <br>Instructor: {{flight.instructor}} Captain: {{flight.captain}}
-    <br>
+    <br> Pax: {{flight.passengercount}}   {{flight.distance}}NM  Rotation: {{flight.rotationid}}
+    <br>Instrument Actual: {{flight.imc}} IAP: {{flight.iap}}
+    <br>Captain: {{flight.captain}}
+    <br>{{flight.personalcomments}}
     <a href="../delete/{{flight.id}}"> Delete </a>
     
  
