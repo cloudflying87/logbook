@@ -25,16 +25,23 @@ class Totals(ListView):
 
     def get_queryset(self):
         userid = getuserid()
-        qs = {'total' : FlightTime.objects.all().filter(userid=userid).     aggregate(
-            total = Sum('total'),
-            day = Sum('day'),
-            daylandings = Sum('daylandings'),
-            night = Sum('night'),
-            nightlandings = Sum('nightlandings'),
-            totalflights = Count('flightdate')
-        ),
+        qs = {
+            'total' : FlightTime.objects.all().filter(userid=userid).     aggregate(
+                total = Sum('total'),
+                day = Sum('day'),
+                daylandings = Sum('daylandings'),
+                night = Sum('night'),
+                nightlandings = Sum('nightlandings'),
+                totalflights = Count('flightdate')
+            ),
 
-        'totalflights': FlightTime.objects.all().filter(userid=userid).exclude(total=0).aggregate(Count('flightdate'))
+            'totalflights': FlightTime.objects.all().filter(userid=userid).exclude(total=0).aggregate(
+            tflight = Count('flightdate')
+            ),
+            '737800': FlightTime.objects.all().filter(userid=userid,aircrafttype = 'B737-800').exclude(total=0).aggregate(
+                total = Sum('total')
+                
+            ),
         
         }
         
