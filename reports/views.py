@@ -38,7 +38,11 @@ class Totals(ListView):
             'totalflights': FlightTime.objects.all().filter(userid=userid).exclude(total=0).aggregate(
             tflight = Count('flightdate')
             ),
-            '737800': FlightTime.objects.all().filter(userid=userid,aircrafttype = 'B737-800').exclude(total=0).aggregate(
+            '737800': FlightTime.objects.all().filter(userid=userid,aircrafttype = 'B737-800').aggregate(
+                total = Sum('total')
+                
+            ),
+            '737900': FlightTime.objects.all().filter(userid=userid,aircrafttype = 'B737-900').aggregate(
                 total = Sum('total')
                 
             ),
