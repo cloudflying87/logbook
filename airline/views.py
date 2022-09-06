@@ -170,7 +170,6 @@ def importingevents(request):
     # here is retreving calendar events and then working them correctly to get everything in the database. 
     now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
     calendarId=credentials[0]
-    print(calendarId)
     page_token = None
     trip = []
     monthsum = []
@@ -267,71 +266,3 @@ class DeltaScheduleEntry(ListView):
     def get_queryset(self, *args, **kwargs):
         logbookdisplay = FlightTime.objects.all().filter(userid=getuserid(),scheduledflight=True).order_by('flightdate')
         return logbookdisplay
-
-# def workdeltschedulegoogle2(request):
-# #original working from the google example.
-#     # If modifying these scopes, delete the file token.json.
-#     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
-    
-#     creds = None
-    
-#     if os.path.exists('./airline/token.json'):
-#         creds = Credentials.from_authorized_user_file('./airline/token.json', SCOPES)
-#     # If there are no (valid) credentials available, let the user log in.
-#     # if not creds or not creds.valid:
-#         if creds and creds.expired and creds.refresh_token:
-#             creds.refresh(Request())
-#         else:   
-#             flow = InstalledAppFlow.from_client_secrets_file(
-#                 './airline/credentials.json', SCOPES)
-#             creds = flow.run_local_server(port=0)
-#         # Save the credentials for the next run
-#         with open('./airline/token.json', 'w') as token:
-#             token.write(creds.to_json())
-
-#     try:
-#         service = googleapiclient.discovery.build('calendar', 'v3', credentials=creds)
-#         # Call the Calendar API
-#         now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-#         calendarId='jb360v1bcsqt0m7cf7sja0i06g@group.calendar.google.com'
-#         page_token = None
-#         trip = []
-#         monthsum = []
-#         while True:
-#             events = service.events().list(calendarId=calendarId, pageToken=page_token,timeMin=now).execute()
-#             for event in events['items']:
-#                 summary = re.sub(r'\n','',event['summary'])
-#                 tripnum = summary[0:4]
-#                 triptimes = summary[-11:]
-#                 description = event['description']
-#                 descriptionsplit = description.split()
-
-#                 for count,item in enumerate(descriptionsplit):
-#                     match = re.search("[0-3][0-9][A-Z][A-Z][A-Z]",item)
-#                     if match:
-#                             flightdate = item
-#                     if item[0:2] =="DL":
-#                         flightnum = item[2:7]
-#                         depart = descriptionsplit[count+1][:3]
-#                         arr = descriptionsplit[count+1][-3:]
-#                         deptime = descriptionsplit[count+2][:5]
-#                         arrtime = descriptionsplit[count+2][-5:]
-#                         leg = [flightdate,flightnum,depart,arr,deptime,arrtime,tripnum]
-#                         trip.append(leg)
-#                         leg=[]
-#                 monthsum.append(trip)  
-#                 trip=[]      
-            
-#                 # schedule.append(description)
-                
-#             page_token = events.get('nextPageToken')
-#             if not page_token:
-#                 break
-        
-
-#     except HttpError as error:
-#         print('An error occurred: %s' % error)
-
-#     schedulelist = modifiyingschedule(monthsum)
-
-#     return render(request, 'airline/masterschedule.html', {'added': schedulelist[0],'notadded':schedulelist[1]}) 

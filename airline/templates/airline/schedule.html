@@ -3,10 +3,7 @@
 
 {% block content %}
 {% include 'logbook/navbar.html' %} 
-<a class="nav-link" href="{% url 'cal_auth' %}">Start Here, This should work everytime now</a>
-<a class="nav-link" href="{% url 'googleschedule' %}"> Choose Calendar</a>
-<a class="nav-link" href="{% url 'importingevents' %}"> Import Events</a>
-
+<a class="nav-link" href="{% url 'cal_auth' %}">Import Google Calendar</a>
 
 <h2>Scheduled Flights</h2>
         {% for flight in flight_list %}
