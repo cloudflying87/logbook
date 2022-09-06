@@ -95,13 +95,13 @@ class Oauth2CallbackView(View):
             if calid != None:
                 redirecturi = 'http://localhost:8000/airline/import'
             else:
-                redirecturi = 'http://localhost:8000/airline/googleschedule'
+                redirecturi = 'http://localhost:8000/airline/google'
         else:
             flow.redirect_uri = 'https://logbook.flyhomemn.com/airline/oauth2callback/'
             if calid !=None:
                 redirecturi = 'https://logbook.flyhomemn.com/airline/import'
             else:
-                redirecturi = 'https://logbook.flyhomemn.com/airline/googleschedule'
+                redirecturi = 'https://logbook.flyhomemn.com/airline/google'
         #save the google credentials to the database
         flow.fetch_token(code=self.request.GET.get('code'))
         credentials = flow.credentials
