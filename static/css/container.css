@@ -34,3 +34,30 @@ body {
   width:20em;
   white-space: pre;
 }
+
+#display {
+
+  margin-left: auto;
+  margin-right: auto;
+  align-items: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  
+}
+
+.center{
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.heading {
+  background-color: aqua;
+
+}
+table, th, td, tr {
+  padding: 5px;
+  text-align: center;
+  border-width: 2px;
+  border: solid rgb(7, 6, 6);
+  font-weight: 200;
+}

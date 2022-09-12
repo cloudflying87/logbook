@@ -1,0 +1,70 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Report Page</h1>
+
+<label for="report-select">Choose a Report:</label>
+
+<select name="reports" id="report-select">
+    <option value="">--Please choose an option--</option>
+    <option value="totals">Totals</option>
+    <option value="category">Category</option>
+    
+</select>
+<br>
+
+<div id="display">
+
+
+</div>
+
+ <script>
+  
+
+document.addEventListener('input', function (event) {
+  if (event.target.id === 'report-select'){
+    if (event.target.value == 'totals') {
+      url = "{% url 'totals' %}"
+      $.ajax({                       
+      url: url,  
+      data: {
+      },
+      success: function (data) {   
+        $("#display").html(data); 
+      }
+    });
+    }
+    if (event.target.value == 'category') {
+      url = "{% url 'category' %}"
+      $.ajax({                       
+      url: url,  
+      data: {
+      },
+      success: function (data) {   
+        $("#display").html(data); 
+      }
+    });
+    }
+  }
+    
+  if (event.target.id === 'manufactureselect'){
+    
+    url = "{% url 'category' %}"
+      $.ajax({                       
+      url: url,  
+      data: {
+        "category":$("#manufactureselect").val()
+      },
+      success: function (data) {   
+        $("#display").html(data); 
+      }
+    });
+  }
+
+  }, false);
+
+
+  </script>
+{% endblock%}

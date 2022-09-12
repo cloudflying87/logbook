@@ -1,0 +1,36 @@
+<select name="reports" id="manufactureselect">
+        <option>Select Manufacture</option>
+    {% for item in manufacture%}
+       <option value = {{item}}>{{item}}</option> 
+    {% endfor %} 
+</select>
+
+<table class = 'center'>
+    {% for item in qs%}
+        <tr>
+            <th rowspan="2">{{item.aircraftype}}</th>
+            <th>Total</th>
+            <th>Avg Flight</th>
+            <th># Flight</th>
+            <th>Total Miles</th>
+            <th>Avg Miles</th>
+            <th>Total Passengers</th>
+            <th>Avg Passengers</th>
+        </tr>
+        <tr>
+            <td>{{item.info.aircraftsummary.airtotal}}</td>
+            <td>{{item.info.aircraftsummary.avgflight}}</td>
+            <td>{{item.info.aircraftsummary.numflight}}</td>
+            <td>{{item.info.aircraftsummary.totalmiles}}</td>
+            <td>{{item.info.aircraftsummary.avgmiles}}</td>
+            <td>{{item.info.aircraftsummary.totalpax}}</td>
+            <td>{{item.info.aircraftsummary.avgpax}}</td>
+        </tr>
+    {% endfor %}
+</table>    
+
+<table class = 'center'>
+    
+    
+</table>  
+

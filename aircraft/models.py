@@ -26,6 +26,7 @@ class AircraftModel(models.Model):
     poweredlift = models.BooleanField(default=False)
     numberseats = models.IntegerField(null=True,blank=True)
     acweight = models.CharField(max_length=100, null=True,blank=True)
+    airliner = models.BooleanField(default=False)
     date_added = models.DateTimeField(blank=True)
     date_edited = models.DateTimeField(blank=True)
     def __str__(self):
