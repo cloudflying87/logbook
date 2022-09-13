@@ -45,9 +45,8 @@ class UpdatePreferences(UpdateView):
     model=Users
     template_name = 'user/updatepreferences.html'
     form_class = UserPreferences
-    
     success_url = 'updatepreferences'
-    
+
     def form_valid(self,form):
         form.save()
         return super().form_valid(form)
