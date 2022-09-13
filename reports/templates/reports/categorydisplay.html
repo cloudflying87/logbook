@@ -1,23 +1,29 @@
 <select name="reports" id="manufactureselect">
         <option>Select Manufacture</option>
     {% for item in manufacture%}
-       <option value = {{item}}>{{item}}</option> 
+       <option value = {{item.id}}>{{item.manufacture}}</option> 
     {% endfor %} 
 </select>
-
+<br>
+<br>
 <table class = 'center'>
-    {% for item in qs%}
+    
         <tr>
-            <th rowspan="2">{{item.aircraftype}}</th>
+            <th>Aircraft</th>
             <th>Total</th>
             <th>Avg Flight</th>
             <th># Flight</th>
             <th>Total Miles</th>
             <th>Avg Miles</th>
-            <th>Total Passengers</th>
-            <th>Avg Passengers</th>
+            <th>Total Pax</th>
+            <th>Avg Pax</th>
+            <th>Night</th>
+            <th>Landings</th>
         </tr>
+        {% for item in qs%}
+        
         <tr>
+            <th>{{item.aircraftype}}</th>
             <td>{{item.info.aircraftsummary.airtotal}}</td>
             <td>{{item.info.aircraftsummary.avgflight}}</td>
             <td>{{item.info.aircraftsummary.numflight}}</td>
@@ -25,8 +31,10 @@
             <td>{{item.info.aircraftsummary.avgmiles}}</td>
             <td>{{item.info.aircraftsummary.totalpax}}</td>
             <td>{{item.info.aircraftsummary.avgpax}}</td>
+            <td>{{item.info.aircraftsummary.night}}</td>
+            <td>{{item.info.aircraftsummary.landings}}</td>
         </tr>
-    {% endfor %}
+        {% endfor %}
 </table>    
 
 <table class = 'center'>

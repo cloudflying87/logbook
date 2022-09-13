@@ -11,6 +11,7 @@
     <option value="">--Please choose an option--</option>
     <option value="totals">Totals</option>
     <option value="category">Category</option>
+    <option value="lookup">Lookup</option>
     
 </select>
 <br>
@@ -24,8 +25,9 @@
   
 
 document.addEventListener('input', function (event) {
+  event.preventDefault()
   if (event.target.id === 'report-select'){
-    if (event.target.value == 'totals') {
+    if (event.target.value === 'totals') {
       url = "{% url 'totals' %}"
       $.ajax({                       
       url: url,  
@@ -36,7 +38,19 @@ document.addEventListener('input', function (event) {
       }
     });
     }
-    if (event.target.value == 'category') {
+    if (event.target.value === 'lookup') {
+      url = "{% url 'lookup' %}"
+      $.ajax({                       
+      url: url,  
+      data: {
+      },
+      success: function (data) {   
+        $("#display").html(data); 
+      }
+    });
+    }
+
+    if (event.target.value === 'category') {
       url = "{% url 'category' %}"
       $.ajax({                       
       url: url,  
@@ -47,6 +61,8 @@ document.addEventListener('input', function (event) {
       }
     });
     }
+  
+    
   }
     
   if (event.target.id === 'manufactureselect'){
@@ -63,8 +79,43 @@ document.addEventListener('input', function (event) {
     });
   }
 
-  }, false);
+  if (event.target.id === 'lookupselect'){
+    if ($("#lookupselect").val() == 'airport'){
+      
+      selecturl = "{% url 'autocomplete' %}"
+      $('#secondoption').select2({
+            ajax: {
+                url: selecturl,
+                data: function (params) {
+                    var query = {
+                        q: params.term,
+                    }
+                return query;
+                }
+                
+            }
+          })
+    }
+  }
 
+  $("#secondoption").on("select2:select", function (e){
+    url = "{% url 'airportlookup' %}"
+      $.ajax({                       
+      url: url,  
+      data: {
+        "lookup": e.params.data,
+        "option": "airport"
+      },
+      success: function (data) {   
+        $("#lookupdiv").html(data); 
+      }
+    });
+  })
+  var count = 0
+  count = count +1
+  console.log(count)
+  ,false});
 
+  
   </script>
 {% endblock%}

@@ -1,0 +1,31 @@
+<h3>Total Times = {{total}}</h3>
+<table class = 'center'>
+
+    <tr>
+        <th>Flight Date</th>
+        <th>Tail Number</th>
+        <th>Depart</th>
+        <th>Route</th>
+        <th>Arrival</th>
+        <th>Total</th>
+        <th>Night</th>
+        <th>Pilot</th>
+        <th>Comments</th>
+    </tr>    
+    
+    {% for item in depart%}
+    <tr>
+        <th>{{item.flightdate}}</th>
+        <th>{{item.aircraftId}}</th>
+        <th>{{item.departure}}</th>
+        <th>{{item.route}}</th>
+        <th>{{item.arrival}}</th>
+        <th>{{item.total}}</th>
+        <th>{{item.night}}</th>
+        <th>{{item.captain}}{{item.firstofficer}}</th>
+        <th>{{item.printcomments}}--{{item.personalcomments}}</th>
+        
+    </tr>
+    {% endfor %}
+
+</table>  
