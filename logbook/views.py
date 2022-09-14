@@ -338,6 +338,38 @@ class LogbookEntry(FormView):
         instance.save()
         return super().form_valid(form)
 
+def reworktimes2(request):
+    currentuser = str(get_current_user())
+    userid=User.objects.get(username=currentuser).pk
+    filename = 'lulogbook2'
+    with open('./logbook/fixtures/'+filename+'.csv','r') as read_file:
+        logbook = csv.reader(read_file)
+        leg = []
+        allentries = []
+        for count,entry in enumerate(logbook):
+            flightdatetotal = datetime.strptime(entry[0],'%Y-%m-%d')
+            flightdate = flightdatetotal.date()
+            unixdate = time.mktime(flightdate.timetuple())
+            depairportinfo = gettingairportinfo(entry[2],unixdate,flightdate)
+            
+            arrairportinfo = gettingairportinfo(entry[3],unixdate,flightdate)
+            print(entry[1],arrairportinfo[0]['airport']['icao'],depairportinfo[0]['airport']['icao'])
+            if (arrairportinfo[0]['airport']) == 'missing' or depairportinfo[0]['airport'] == 'missing':
+                entry1 = entry[0],entry[1],entry[2],entry[3]
+                allentries.append(entry1)
+            else:
+                distance = int((great_circle((depairportinfo[0]['airport']['lat'],depairportinfo[0]['airport']['long']),(arrairportinfo[0]['airport']['lat'],arrairportinfo[0]['airport']['long'])).nm))
+
+                entry1 = entry[0],entry[1],entry[2],entry[3],distance
+                allentries.append(entry1)
+
+    with open('./logbook/fixtures/'+filename+'print.csv','w') as outfile:
+        write = csv.writer(outfile)
+        write.writerows(allentries)
+    
+    html = "<html><body>Good to go. {%timenow%} </body></html>" 
+    return HttpResponse(html)
+
 def reworktimes(request):
     currentuser = str(get_current_user())
     userid=User.objects.get(username=currentuser).pk

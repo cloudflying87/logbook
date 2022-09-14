@@ -168,7 +168,10 @@ def importingevents(request):
         
     service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials[1])
     # here is retreving calendar events and then working them correctly to get everything in the database. 
-    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+    now = datetime.datetime.today().replace(day=1).isoformat() +'Z'
+    print(now)
+    print(datetime.datetime.utcnow().isoformat() + 'Z' )
+    # now = datetime.datetime.utcnow().isoformat() + 'Z' 
     calendarId=credentials[0]
     page_token = None
     trip = []
