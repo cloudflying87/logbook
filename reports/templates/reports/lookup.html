@@ -16,5 +16,35 @@
 </div>
 </div>
 <br>
+<script>
+    if ($("#lookupselect").val() == 'airport'){
+      selecturl = "{% url 'autocomplete' %}"
+      $('#secondoption').select2({
+            ajax: {
+                url: selecturl,
+                data: function (params) {
+                    var query = {
+                        q: params.term,
+                    }
+                return query;
+                }
+                
+            }
+          })
+    };
 
+    $("#secondoption").on("select2:select", function (e){
+    url = "{% url 'airportlookup' %}"
+      $.ajax({                       
+      url: url,  
+      data: {
+        "lookup": e.params.data,
+        "option": "airport"
+      },
+      success: function (data) {   
+        $("#lookupdiv").html(data); 
+      }
+    });
+  })
+</script>
 

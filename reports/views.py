@@ -8,6 +8,7 @@ from django.views.generic.base import TemplateView
 from django.views.generic.list import ListView
 from aircraft.models import AircraftModel, Manufacture, NewPlaneMaster
 from logbook.models import FlightTime
+from django.db.models.functions import ExtractYear
 from user.models import Users
 from django.contrib.auth.models import User
 from django_currentuser.middleware import (
@@ -22,6 +23,10 @@ from django.db.models import Q
 def reporthome(request):
     print('hello')
 
+class ReportBase(TemplateView):
+    model = FlightTime
+    context_object_name = "flight"
+    template_name = 'reports/basereport.html'
 class TotalsOnly(TemplateView):
     template_name = 'reports/totaldisplay.html'
     def get(self, *args, **kwargs):
@@ -61,15 +66,11 @@ class AirportLookup(TemplateView):
         depart = FlightTime.objects.filter(Q(departure=secondrequest) | Q(arrival=secondrequest),userid=userid).exclude(Q(scheduledflight=1) | Q(total=0)).order_by('-flightdate')
         return self.render_to_response({'total':depart.count(),'depart':depart,"title":pagetitle})
 
+#This is used to get the lookup page started
 class Lookup(TemplateView):
     template_name = 'reports/lookup.html'
     def get(self, request, *args, **kwargs):
         pagetitle = "Look-Up"
-        lookuprequest = request.GET.get('option')
-        secondrequest = request.GET.get('lookup[id]')
-
-        if lookuprequest == 'airport':
-            print('airport',secondrequest)
         return self.render_to_response({"title":pagetitle})
 
 class CategoryDisplay(TemplateView):
@@ -143,8 +144,39 @@ class CategoryDisplay(TemplateView):
                     qs.append(record)
             return self.render_to_response({"manufacture":manufacture,"qs":qs, "title":pagetitle})
 
-class Totals(ListView):
+
+class TotalsByDate(TemplateView):
+    template_name = 'reports/totalsbydate.html'
     
-    model = FlightTime
-    context_object_name = "flight"
-    template_name = 'reports/basereport.html'
+    def get(self, request, *args, **kwargs):
+        yeartotals = []
+        years = []
+        labels =[]
+        pax = []
+        miles = []
+        pagetitle = "Totals By Date"
+        userid = getuserid()
+        logbookyears = FlightTime.objects.filter(userid=userid).annotate(year=ExtractYear('flightdate')).values('year').distinct()
+
+        for logyear in logbookyears:
+            info = FlightTime.objects.filter(userid=userid,flightdate__year=logyear['year']).aggregate(
+                    airtotal = Sum('total'),
+                    miletotal = Sum('distance'),
+                    paxtotal = Sum('passengercount'),
+                    flighttotal = Count('total'),
+                    avgflight = Avg('total'),
+                    avgdistance = Avg('distance'),
+                    avgpax = Avg('passengercount')
+            )
+            label = logyear['year']
+            data = float(info['airtotal'])
+            paxtotal = int(info['paxtotal'])
+            milestotal = int(info['miletotal'])
+            totalyear = {'year':logyear['year'],'airtotal':info['airtotal'],'pax':info['paxtotal'],'miles':info['miletotal'],'flighttotal':info['flighttotal'],'avgflight':round(info['avgflight'],2),'avgdistance':int(info['avgdistance']),'avgpax':int(info['avgpax'])}
+            yeartotals.append(data)
+            labels.append(label)
+            pax.append(paxtotal)
+            miles.append(milestotal)
+            years.append(totalyear)
+        
+        return self.render_to_response({"yeartotals":yeartotals,'labels':labels,'years':years,'pax':pax,'miles':miles,"title":pagetitle})
