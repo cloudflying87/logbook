@@ -32,6 +32,7 @@ def aircrafthome(request):
 class TailNumberLookup(autocomplete.Select2QuerySetView):
     def get_queryset(self):
         userid = getuserid()
+        # qs = FlightTime.objects.filter(userid=userid).values('aircraftId').distinct().order_by('aircraftId')
         qs = NewPlaneMaster.objects.all().order_by('nnumber')
         if self.q:
             qs = qs.filter(nnumber__istartswith=self.q)

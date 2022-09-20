@@ -189,6 +189,19 @@ class TailLookupDisplay(TemplateView):
     template_name = 'reports/taillookup.html'
 
     def get(self, request, *args, **kwargs):
+        userid=getuserid()
         pagetitle = "Tail Number Lookup"
         secondrequest = request.GET.get('lookup[id]')
-        return self.render_to_response({"title":pagetitle,"id":secondrequest})
+
+        info = FlightTime.objects.filter(userid=userid,aircraftId=secondrequest).aggregate(
+                    airtotal = Sum('total'),
+                    miletotal = Sum('distance'),
+                    paxtotal = Sum('passengercount'),
+                    flighttotal = Count('total'),
+                    avgflight = Avg('total'),
+                    avgdistance = Avg('distance'),
+                    avgpax = Avg('passengercount')
+            )
+        flights = FlightTime.objects.filter(userid=userid,aircraftId=secondrequest).exclude(scheduledflight=True).order_by('-flightdate')
+        
+        return self.render_to_response({"title":pagetitle,"years":info,"depart":flights})

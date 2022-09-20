@@ -1,1 +1,54 @@
-{{title}}{{id}}
+<div>
+    <table class = 'center'>
+        <tr>
+            <th>Total</th>
+            <th>Avg Flight</th>
+            <th>Miles</th>
+            <th>Avg Distance</th>
+            <th>Passengers</th>
+            <th>Avg Pax</th>
+            <th>Total # Flights</th>
+        </tr>
+        <tr>
+            <th>{{years.airtotal}}</th>
+            <th>{{years.avgflight}}</th>
+            <th>{{years.miletotal}}</th>
+            <th>{{years.avgdistance}}</th>
+            <th>{{years.paxtotal}}</th>
+            <th>{{years.avgpax}}</th>
+            <th>{{years.flighttotal}}</th>
+        </tr>
+    </table>
+</div>
+<div>
+    <table class = 'center'>
+
+        <tr>
+            <th>Flight Date</th>
+            <th>Tail Number</th>
+            <th>Depart</th>
+            <th>Route</th>
+            <th>Arrival</th>
+            <th>Total</th>
+            <th>Night</th>
+            <th>Pilot</th>
+            <th>Comments</th>
+        </tr>    
+        
+        {% for item in depart%}
+        <tr>
+            <th>{{item.flightdate}}</th>
+            <th>{{item.aircraftId}}</th>
+            <th>{{item.departure}}</th>
+            <th>{{item.route}}</th>
+            <th>{{item.arrival}}</th>
+            <th>{{item.total}}</th>
+            <th>{{item.night}}</th>
+            <th>{{item.captain}}{{item.firstofficer}}</th>
+            <th>{{item.printcomments}}--{{item.personalcomments}}</th>
+            
+        </tr>
+        {% endfor %}
+    
+    </table> 
+</div>
