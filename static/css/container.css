@@ -61,3 +61,7 @@ table, th, td, tr {
   border: solid rgb(7, 6, 6);
   font-weight: 200;
 }
+
+.hide{
+  visibility: hidden;
+}

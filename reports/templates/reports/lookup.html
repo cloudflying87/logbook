@@ -6,45 +6,89 @@
 </select>
 <br>
 <div id="selectplacement" >
-<select id="secondoption" style="width: 10%">
-    
-</select>
+    <!-- <select id='secondoption' style= 'width: 25%'></select> -->
+</div>
 <br>
-<br>
-<div id="lookupdiv">
+<div id="lookupdiv"></div>
 
-</div>
-</div>
 <br>
 <script>
-    if ($("#lookupselect").val() == 'airport'){
-      selecturl = "{% url 'autocomplete' %}"
-      $('#secondoption').select2({
-            ajax: {
-                url: selecturl,
-                data: function (params) {
-                    var query = {
-                        q: params.term,
+    // $("#lookupselect").addEventListener("change",changingselect)
+    $("#lookupselect").change(function() {
+        if ($("#lookupselect").val() == 'airport'){
+            $('#selectplacement').empty()
+            $('#lookupdiv').empty()
+            $('#selectplacement').append("<select id='airportlookup' style= 'width: 25%'></select>")
+            selecturl = "{% url 'autocomplete' %}"
+            $('#airportlookup').select2({
+                ajax: {
+                    url: selecturl,
+                    data: function (params) {
+                        var query = {
+                            q: params.term,
+                        }
+                    return query;
                     }
-                return query;
+                    
                 }
-                
-            }
-          })
-    };
+                })
+        };
+        if ($("#lookupselect").val() == 'tailnumber'){
+            $('#selectplacement').empty()
+            $('#lookupdiv').empty()
 
-    $("#secondoption").on("select2:select", function (e){
+            $('#selectplacement').append("<select id='taillookup' style= 'width: 25%'></select>")
+            selecturl2 = "{% url 'taillookup' %}"
+            $('#taillookup').select2({
+                ajax: {
+                    url: selecturl2,
+                    data: function (params) {
+                        var query = {
+                            q: params.term,
+                        }
+                    return query;
+                    }
+                    
+                }
+                })
+            
+        };
+        if ($("#lookupselect").val() == 'pilot'){
+            $('#selectplacement').empty()
+            $('#lookupdiv').empty()
+            
+        };
+    })
+
+// $("#secondoption").change(function (){
+//     console.log('hello')
+// })
+$("#selectplacement").on("select2:select", "#airportlookup", function (e){
     url = "{% url 'airportlookup' %}"
-      $.ajax({                       
-      url: url,  
-      data: {
+    $.ajax({                       
+    url: url,  
+    data: {
         "lookup": e.params.data,
         "option": "airport"
-      },
-      success: function (data) {   
+    },
+    success: function (data) {   
         $("#lookupdiv").html(data); 
-      }
+    }
     });
-  })
+})
+
+$("#selectplacement").on("select2:select", "#taillookup", function (e){
+    url = "{% url 'taillookupdisplay' %}"
+    $.ajax({                       
+    url: url,  
+    data: {
+        "lookup": e.params.data,
+        "option": "tailnumber"
+    },
+    success: function (data) {   
+        $("#lookupdiv").html(data); 
+    }
+    });
+})
 </script>
 

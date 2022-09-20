@@ -57,6 +57,12 @@ class TotalsOnly(TemplateView):
             tflight = Count('flightdate'))}
         return self.render_to_response({"qs":qs, "title":pagetitle})
 
+class Lookup(TemplateView):
+    template_name = 'reports/lookup.html'
+    def get(self, request, *args, **kwargs):
+        pagetitle = "Look-Up"
+        return self.render_to_response({"title":pagetitle})
+
 class AirportLookup(TemplateView):
     template_name = 'reports/airportreport.html'
     def get(self, request, *args, **kwargs):
@@ -67,11 +73,7 @@ class AirportLookup(TemplateView):
         return self.render_to_response({'total':depart.count(),'depart':depart,"title":pagetitle})
 
 #This is used to get the lookup page started
-class Lookup(TemplateView):
-    template_name = 'reports/lookup.html'
-    def get(self, request, *args, **kwargs):
-        pagetitle = "Look-Up"
-        return self.render_to_response({"title":pagetitle})
+
 
 class CategoryDisplay(TemplateView):
     template_name = 'reports/categorydisplay.html'
@@ -144,6 +146,8 @@ class CategoryDisplay(TemplateView):
                     qs.append(record)
             return self.render_to_response({"manufacture":manufacture,"qs":qs, "title":pagetitle})
 
+class TotalsDisplay(TemplateView):
+    template_name = 'reports/datebase.html'
 
 class TotalsByDate(TemplateView):
     template_name = 'reports/totalsbydate.html'
@@ -180,3 +184,11 @@ class TotalsByDate(TemplateView):
             years.append(totalyear)
         
         return self.render_to_response({"yeartotals":yeartotals,'labels':labels,'years':years,'pax':pax,'miles':miles,"title":pagetitle})
+
+class TailLookupDisplay(TemplateView):
+    template_name = 'reports/taillookup.html'
+
+    def get(self, request, *args, **kwargs):
+        pagetitle = "Tail Number Lookup"
+        secondrequest = request.GET.get('lookup[id]')
+        return self.render_to_response({"title":pagetitle,"id":secondrequest})
