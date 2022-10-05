@@ -1,0 +1,22 @@
+<h3>Unique Airports - {{unique}}</h3>
+<h3>Top 10 Airports</h3>
+
+<table class = 'center'>
+
+    <tr>
+        <th>Airport</th>
+        <th>Number of Operations</th>
+        <th>Landings</th>
+
+    </tr>  
+        
+    {% for item in depart%}
+    <tr>
+        <th>{{item.airport}}</th>
+        <th>{{item.times}}</th>
+        <th>{{item.landings}}</th>
+        
+    </tr>
+    {% endfor %}
+
+</table>

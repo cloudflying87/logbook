@@ -1,5 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.forms.formsets import formset_factory
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.generic import FormView, ListView
 from aircraft.models import NewPlaneMaster,AircraftModel
@@ -31,8 +32,18 @@ def aircrafthome(request):
 #     return correctdata
 class TailNumberLookup(autocomplete.Select2QuerySetView):
     def get_queryset(self):
+        qs = []
         userid = getuserid()
-        # qs = FlightTime.objects.filter(userid=userid).values('aircraftId').distinct().order_by('aircraftId')
+        print('hello')
+        disticttails = FlightTime.objects.filter(userid=userid).values('aircraftId').distinct().order_by('aircraftId')
+        
+        for aircraft in disticttails:
+            data = {'id':aircraft['aircraftId'],'text':aircraft['aircraftId']}
+            qs.append(data)
+        
+        # return  JsonResponse(correctdata, safe=False)
+        # print(correctdata)
+        # return self.render_to_response({"result":correctdata})
         qs = NewPlaneMaster.objects.all().order_by('nnumber')
         if self.q:
             qs = qs.filter(nnumber__istartswith=self.q)

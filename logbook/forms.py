@@ -1,4 +1,5 @@
 from multiprocessing import get_context
+from optparse import Option
 from django import forms
 # from django.db.models.fields import Field
 from django.forms import widgets
@@ -29,12 +30,15 @@ class FlightTimeEntry(forms.ModelForm):
         self.initial['userid'] = userid
         self.fields['flightdate'].label = "Date"
         self.fields['aircraftId'].label = "Tail Number"
-        self.fields['aircraftId'].initial = 'N802DN'
+        # self.fields['aircraftId'].initial = 'N802DN'
         # self.fields['departure'].queryset = NewPlaneMaster.objects.all().order_by('nnumber')[:10]
-        self.fields['deptime'].initial = "11:00"
+        # self.fields['deptime'].initial = "11:00"
         self.fields['departure'].label = "Departure Airport"
-        self.fields['departure'].initial = initialairport
+        self.fields['departure'].widget.attrs.update({'style':"width: 50%"})
+
+        self.fields['departure'].initial = "KMSP"
         self.fields['arrival'].label = "Arrival Airport"
+        self.fields['arrival'].widget.attrs.update({'style':"width: 50%"})
         self.fields['flightnum'].label = "Flight Number"
         self.fields['deptime'].label = "Departure Time (Out)"
         self.fields['offtime'].label = "Take-off Time(Off)"
@@ -99,7 +103,8 @@ class FlightTimeEntry(forms.ModelForm):
         widgets = {
             # 'aircraftId':autocomplete.ModelSelect2(url='aircraftidlookup'),
             # 'departure':autocomplete.ModelSelect2(url='autocomplete'),
-            'departure': forms.TextInput(attrs={'class': 'textinput textInput select2-accessible'}),
+            'departure': forms.Select(),
+            'arrival': forms.Select(),
             # 'arrival':autocomplete.ModelSelect2(url='autocomplete'),
             'flightdate': DateInput(attrs={'type': 'date'}),
         }

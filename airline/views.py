@@ -239,7 +239,7 @@ def modifiyingschedule(schedule):
             
             leg = [flightdate.strftime("%m/%d/%Y"),flightnumber,departairport,arrivalairport,departuretime,arrivaltime,blocktime,rotationid]
 
-            if not FlightTime.objects.filter(userid=getuserid(),flightdate=flightdate,flightnum=flightnumber).exists():
+            if not FlightTime.objects.filter(userid=getuserid(),flightdate=flightdate,flightnum=flightnumber,departure=departairport,arrival=arrivalairport,scheduleddeparttime=departuretime).exists():
                 flighttime = FlightTime()
                 flighttime.userid = getuserid()
                 flighttime.aircraftId = NewPlaneMaster.objects.get(nnumber = 'N802DN')

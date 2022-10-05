@@ -1,7 +1,4 @@
-
-from cgitb import lookup
-from codecs import lookup_error
-import re
+import os
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.views.generic.base import TemplateView
@@ -18,6 +15,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count,Sum,Avg
 from django.db.models.functions import Round
 from django.db.models import Q
+import requests
 
 @login_required(login_url='/')
 def reporthome(request):
@@ -63,12 +61,42 @@ class Lookup(TemplateView):
         pagetitle = "Look-Up"
         return self.render_to_response({"title":pagetitle})
 
+class TopAirports(TemplateView):
+    template_name = 'reports/topairports.html'
+    
+    def get(self, request, *args, **kwargs):
+        airportcount = []
+        makedict = []
+        pagetitle = "Airports"
+        userid = getuserid()
+        topfive =  FlightTime.objects.filter(userid=userid).values('departure').distinct()
+        
+        for airport in topfive:
+            
+            info = FlightTime.objects.filter(Q(departure=airport['departure']) | Q(arrival=airport['departure']),userid=userid).exclude(Q(scheduledflight=1) | Q(total=0)).aggregate(
+                operations = Count('flightdate'),
+                landings = Sum('landings'))
+            
+            if airport['departure'] != None:
+                airportdata = (info['operations'],airport['departure'],info['landings'])
+                airportcount.append(airportdata)
+        airportcount.sort(reverse=True)
+        topten = airportcount[:10]
+
+        for airport in topten:
+            dictitem= {'airport':airport[1],'times':airport[0],'landings':airport[2]}
+            makedict.append(dictitem)
+        
+        return self.render_to_response({'depart':makedict,"title":pagetitle,'unique':len(topfive)})
 class AirportLookup(TemplateView):
     template_name = 'reports/airportreport.html'
+    
     def get(self, request, *args, **kwargs):
+        airportcount = []
         pagetitle = "Airports"
         userid = getuserid()
         secondrequest = request.GET.get('lookup[id]')
+        
         depart = FlightTime.objects.filter(Q(departure=secondrequest) | Q(arrival=secondrequest),userid=userid).exclude(Q(scheduledflight=1) | Q(total=0)).order_by('-flightdate')
         return self.render_to_response({'total':depart.count(),'depart':depart,"title":pagetitle})
 
@@ -205,3 +233,20 @@ class TailLookupDisplay(TemplateView):
         flights = FlightTime.objects.filter(userid=userid,aircraftId=secondrequest).exclude(scheduledflight=True).order_by('-flightdate')
         
         return self.render_to_response({"title":pagetitle,"years":info,"depart":flights})
+
+class FlightAware(TemplateView):
+    template_name = 'reports/taillookup.html'
+
+    def get(self, request, *args, **kwargs):
+        
+        pagetitle = "Tail Number Lookup"
+        
+        # AEROAPI_BASE_URL = "https://aeroapi.flightaware.com/aeroapi"
+        AEROAPI_KEY = os.getenv('flightawareapi')
+        # AEROAPI = requests.Session()
+        # AEROAPI.headers.update({"x-apikey": AEROAPI_KEY})
+        
+        response = request.get("https://aeroapi.flightaware.com/aeroapi")
+        return self.render_to_response({"title":pagetitle,"info":info})
+
+        

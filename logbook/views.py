@@ -157,9 +157,16 @@ def checkdaynight(night,total,landing,landingtime):
             else:
                 return nighttime,daytime
 
+def fixtime(timetofix):
+    # Dealing with the :00 that are added with the form edit. 
+    if len(timetofix) == 8:
+        fixedtime = timetofix[:5]
+    else:
+        fixedtime = timetofix
+
+    return fixedtime
  
 def addingtimeanddate(flightdate,starttime,utcoffset):
-    
     if datetime.strptime(starttime,'%H:%M').time() <= (datetime.strptime('23:59','%H:%M') - timedelta(hours=utcoffset)).time():
         zuludate = flightdate+ timedelta(days=1)
     else:
@@ -167,6 +174,7 @@ def addingtimeanddate(flightdate,starttime,utcoffset):
     fixeddatetime = datetime.combine(zuludate,datetime.strptime(starttime,'%H:%M').time())
     
     return fixeddatetime
+
 def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunrisen,arrsunsetp,arrsunrise,arrsunset,arrsunrisen,landing):
     formula = ''
     #all night time 
@@ -273,16 +281,17 @@ class LogbookEntry(FormView):
             landings = 0
         #calculating block time
         if form['arrtime'].value() != "" and form['deptime'].value() != "":
-            arrtime = form['arrtime'].value()
-            deptime = form['deptime'].value()
-            
+            arrtime = fixtime(form['arrtime'].value())
+            deptime = fixtime(form['deptime'].value())
+
             decimalplaces = preferences[0]['decimalplaces']
             #setup for future development of hh:ss instead of decimal. 
             decimal=preferences[0]['decimal']
 
             if form['offtime'].value() != "" and form['ontime'].value() != "":
-                offtime = form['offtime'].value()
-                ontime = form['ontime'].value()
+                offtime = fixtime(form['offtime'].value())
+                ontime = fixtime(form['ontime'].value())
+
                 instance.flighttime = calculatetimes(offtime,ontime,decimalplaces,decimal)
 
                 if instance.scheduledflight == 1:
@@ -353,7 +362,7 @@ def reworktimes2(request):
             depairportinfo = gettingairportinfo(entry[2],unixdate,flightdate)
             
             arrairportinfo = gettingairportinfo(entry[3],unixdate,flightdate)
-            print(entry[1],arrairportinfo[0]['airport']['icao'],depairportinfo[0]['airport']['icao'])
+            
             if (arrairportinfo[0]['airport']) == 'missing' or depairportinfo[0]['airport'] == 'missing':
                 entry1 = entry[0],entry[1],entry[2],entry[3]
                 allentries.append(entry1)
@@ -536,6 +545,28 @@ class EditEntry(LogbookEntry,UpdateView):
     pk_url_kwarg = 'id'
     template_name = 'logbook/main.html'
     success_url = '/logbook'
+    
+
+    # def get_initial(self,**kwargs):
+    #     context = super(EditEntry, self).get_initial()
+    #     context['form'] = self.form_class(instance=self.request.user,       initial={
+    #             'departure': self.get_object().departure,
+    #             'arrival': self.get_object().arrival,
+    #     })
+    #     print(context['form']['departure'].value())
+        
+    #     initial = super(EditEntry, self).get_initial()
+    #     try:
+    #         departure = self.get_object().departure
+    #         print(departure)
+    #         arrival = self.get_object().arrival
+    #     except:
+    #         pass
+    #     else:
+    #         initial['departure'] = departure
+    #         print(initial['departure'])
+    #         initial['arrival'] = arrival
+    #     return initial
 
 class ViewEntry(DetailView):
     

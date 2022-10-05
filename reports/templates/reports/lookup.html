@@ -19,6 +19,15 @@
             $('#selectplacement').empty()
             $('#lookupdiv').empty()
             $('#selectplacement').append("<select id='airportlookup' style= 'width: 25%'></select>")
+            url = "{% url 'topairports' %}"
+                $.ajax({                       
+                url: url,  
+                data: {
+                },
+                success: function (data) {   
+                    $("#lookupdiv").html(data); 
+                }
+                });
             selecturl = "{% url 'autocomplete' %}"
             $('#airportlookup').select2({
                 ajax: {
@@ -60,10 +69,9 @@
         };
     })
 
-// $("#secondoption").change(function (){
-//     console.log('hello')
-// })
+
 $("#selectplacement").on("select2:select", "#airportlookup", function (e){
+    $('#lookupdiv').empty()
     url = "{% url 'airportlookup' %}"
     $.ajax({                       
     url: url,  
