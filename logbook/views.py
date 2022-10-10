@@ -176,10 +176,11 @@ def addingtimeanddate(flightdate,starttime,utcoffset):
     return fixeddatetime
 
 def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunrisen,arrsunsetp,arrsunrise,arrsunset,arrsunrisen,landing):
+    
     formula = ''
     #all night time 
     if (deptime > depsunset and deptime < depsunrisen and arrtime > arrsunset and arrtime < arrsunrisen) or (deptime > depsunsetp and deptime < depsunrise and arrtime > arrsunsetp and arrtime < arrsunrise): 
-        formula = 'allnight'
+        formula = 'allnight'  
         nighttime = totaltime 
         daytime = None
         if landing > 0: 
@@ -204,7 +205,6 @@ def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunri
     #departing at night landing during the day 
     if deptime <= depsunrise and arrtime <= arrsunset: 
         formula = 'nighttoday'
-        
         if (depsunrise - deptime) < (arrtime - arrsunrise):
             nightcalc = depsunrise - deptime
         else:
@@ -236,7 +236,6 @@ def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunri
     #late departure into the sunrise of the next day
     if deptime <= depsunrisen and arrtime >= arrsunrisen: 
         formula = 'latedeparture'
-
         nightcalc = (arrtime - arrsunrisen)
         nighttime = round((((nightcalc.total_seconds())/60)/60),2)
         
@@ -281,6 +280,7 @@ class LogbookEntry(FormView):
             landings = 0
         #calculating block time
         if form['arrtime'].value() != "" and form['deptime'].value() != "":
+            print(form['arrtime'].value())
             arrtime = fixtime(form['arrtime'].value())
             deptime = fixtime(form['deptime'].value())
 
@@ -327,7 +327,7 @@ class LogbookEntry(FormView):
                 
                 #if departure date gets one added to it then automatically add it to the arrival date, else run the formula on arrival date separately
                 
-                if departuretime>flightdate:
+                if departuretime>(flightdate+timedelta(days=1)) :
                     arrivaltime = datetime.combine((flightdate + timedelta(days=1)),datetime.strptime(arrtime,'%H:%M').time())
                 else:
                     arrivaltime = addingtimeanddate(flightdate,arrtime,arrairportinfo[0]['gmt_offset_single'])

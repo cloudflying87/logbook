@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect
 from django.views.generic.base import TemplateView
 from django.views.generic.list import ListView
 from aircraft.models import AircraftModel, Manufacture, NewPlaneMaster
+from airport.views import airporthome
 from logbook.models import FlightTime
 from django.db.models.functions import ExtractYear
 from user.models import Users
@@ -235,18 +236,31 @@ class TailLookupDisplay(TemplateView):
         return self.render_to_response({"title":pagetitle,"years":info,"depart":flights})
 
 class FlightAware(TemplateView):
-    template_name = 'reports/taillookup.html'
+    template_name = 'reports/flightaware.html'
 
     def get(self, request, *args, **kwargs):
         
-        pagetitle = "Tail Number Lookup"
+        pagetitle = "Flightaware API"
         
-        # AEROAPI_BASE_URL = "https://aeroapi.flightaware.com/aeroapi"
-        AEROAPI_KEY = os.getenv('flightawareapi')
-        # AEROAPI = requests.Session()
-        # AEROAPI.headers.update({"x-apikey": AEROAPI_KEY})
+        ident = 'DAL2183'
+        startdate = '2022-10-09'
+        params = {"query": "start{startdate},"}
+        endpoint = "https://aeroapi.flightaware.com/aeroapi/flights/{fident}"
+        url = endpoint.format(fident=ident)
         
-        response = request.get("https://aeroapi.flightaware.com/aeroapi")
-        return self.render_to_response({"title":pagetitle,"info":info})
+        headers = {'x-apikey': os.getenv('flightawareapi')}
+        response = requests.get(url, headers=headers)
+        print(response.json())
+        if response.status_code == 200:  # SUCCESS
+            result = response.json()
+            result['success'] = True
+        else:
+            result['success'] = False
+            if response.status_code == 404:  # NOT FOUND
+                result['message'] = 'No entry found for "%s"' % ident
+            else:
+                result['message'] = 'Flightaware is currently not available'
+        
+        return self.render_to_response({"title":pagetitle,"info":result})
 
         
