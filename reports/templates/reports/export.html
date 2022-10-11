@@ -1,0 +1,26 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Export Reports</h1>
+
+<a href="{% url 'exportflighttimeall' %}">Export Flight Table All</a><br>
+
+<p>Select Dates for Export Table: </p>
+<form method=POST action="{% url 'export' %}" class="form-main">
+    {% csrf_token %}
+    <label for="startdate">Start Date:</label>
+    <input type="date" id="startdate" name="startdate"><br>
+    <label for="startall">From Beginning:</label>
+    <input type="checkbox" id="startall" name="startall"><br>
+    <label for="enddate">End Date:</label>
+    <input type="date" id="enddate" name="enddate"><br>
+    <label for="endall">To End:</label>
+    <input type="checkbox" id="endall" name="endall"><br>
+    <button type="submit" class="btn btn-outline-primary">Export</button>
+</form>
+
+
+
+{%endblock%}

@@ -1,5 +1,5 @@
 from django.urls import path
-from reports.views import FlightAware, ReportBase, TotalsByDate, TotalsOnly, CategoryDisplay, Lookup, AirportLookup, TailLookupDisplay,TopAirports
+from reports.views import Export, FlightAware, ReportBase, TotalsByDate, TotalsOnly, CategoryDisplay, Lookup, AirportLookup, TailLookupDisplay,TopAirports, exportflighttimeall
 
 
 urlpatterns = [
@@ -12,5 +12,8 @@ urlpatterns = [
     path('taillookup', TailLookupDisplay.as_view(), name="taillookupdisplay"),
     path('flightaware', FlightAware.as_view(), name="flightaware"),
     path('datetotals', TotalsByDate.as_view(), name="totalsbydate"),
+    path('export', Export.as_view(), name="export"),
+    path('exportflighttime', exportflighttimeall, name="exportflighttimeall"),
+
     
 ]

@@ -22,5 +22,17 @@
   
 
   </div>   
+  <div id="lookupdiv"></div>
 </body>
+<script>
+  url = "{% url 'topairports' %}"
+                $.ajax({                       
+                url: url,  
+                data: {
+                },
+                success: function (data) {   
+                    $("#lookupdiv").html(data); 
+                }
+                });
+</script>
 {% endblock%}

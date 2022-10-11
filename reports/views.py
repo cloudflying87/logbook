@@ -17,6 +17,8 @@ from django.db.models import Count,Sum,Avg
 from django.db.models.functions import Round
 from django.db.models import Q
 import requests
+import csv
+from django.http import HttpResponse
 
 @login_required(login_url='/')
 def reporthome(request):
@@ -243,16 +245,18 @@ class FlightAware(TemplateView):
         pagetitle = "Flightaware API"
         
         ident = 'DAL2183'
-        startdate = '2022-10-09'
-        params = {"query": "start{startdate},"}
+        startdate = '2022-10-09T17:59Z'
+        enddate = '2022-10-09T21:09Z'
+        params = {"start":startdate,"end":enddate}
         endpoint = "https://aeroapi.flightaware.com/aeroapi/flights/{fident}"
         url = endpoint.format(fident=ident)
         
         headers = {'x-apikey': os.getenv('flightawareapi')}
-        response = requests.get(url, headers=headers)
-        print(response.json())
+        response = requests.get(url, params=params, headers=headers)
+        
         if response.status_code == 200:  # SUCCESS
             result = response.json()
+            print(result['flights'][0]['actual_out'])
             result['success'] = True
         else:
             result['success'] = False
@@ -263,4 +267,66 @@ class FlightAware(TemplateView):
         
         return self.render_to_response({"title":pagetitle,"info":result})
 
+class Export(TemplateView):
+    template_name = 'reports/export.html'
+
+    def get(self, request, *args, **kwargs):
         
+        pagetitle = "Export Reports"
+
+        return self.render_to_response({"title":pagetitle})
+
+    def post(self, request, *args, **kwargs):
+        userid=getuserid()
+        if 'startall' in request.POST:
+            startdate = True
+        else:
+            startdate = request.POST['startdate']
+        
+        if 'endall' in request.POST:
+            enddate = True
+        else:
+            enddate = request.POST['enddate']
+        if startdate and enddate:
+            flights = FlightTime.objects.filter(userid=userid)
+        if type(startdate) == str and enddate:
+            flights = FlightTime.objects.filter(userid=userid,flightdate__gt=startdate)
+        if type(startdate) == str and type(enddate) == str:
+            flights = FlightTime.objects.filter(userid=userid,flightdate__gt=startdate,flightdate__lt=enddate)
+        if (startdate) and type(enddate) == str:
+            flights = FlightTime.objects.filter(userid=userid,flightdate__lt=enddate)
+        response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': 'attachment;' f'filename="flighttime{startdate}-{enddate}.csv'},
+    )
+
+    
+        writer = csv.writer(response)
+
+        writer.writerow(['flightdate','aircraftId','departure','route','arrival','flightnum','deptime','offtime','ontime','arrtime','landings','imc','total','day','daylandings','night','nightlandings','printcomments','personalcomments','instructor','student','captain', 'firstofficer','flightattendants','passengercount','scheduleddeparttime','scheduledarrivaltime','scheduledblock','rotationid','aircrafttype','flighttime','distance'])
+        for flight in flights:
+            writer.writerow([flight.flightdate,flight.aircraftId,flight.departure,flight.route,flight.arrival,flight.flightnum,flight.deptime,flight.offtime,flight.ontime,flight.arrtime,flight.landings,flight.imc,flight.total,flight.day,flight.daylandings,flight.night,flight.nightlandings,flight.printcomments,flight.personalcomments,flight.instructor,flight.student,flight.captain,flight.firstofficer,flight.flightattendants,flight.passengercount,flight.scheduleddeparttime,flight.scheduledarrivaltime,flight.scheduledblock,flight.rotationid,flight.aircrafttype,flight.flighttime,flight.distance])
+        
+
+        return response
+
+
+def exportflighttimeall(request):
+
+    userid=getuserid()
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="flighttimeall.csv"'},
+    )
+
+    flights = FlightTime.objects.filter(userid=userid).exclude(scheduledflight=True)
+    
+    writer = csv.writer(response)
+
+    writer.writerow(['flightdate','aircraftId','departure','route','arrival','flightnum','deptime','offtime','ontime','arrtime','landings','imc','hood','iap','typeofapproach','descriptionofapproach','holdnumber','holdboolean','pic','sic','cfi','dual','crosscountry','solo','total','day','daylandings','night','nightlandings','printcomments','personalcomments','ftd','ftdimc','sim','pcatd','pcimc','instructor','instructorid','student','studentid','captain', 'firstofficer','flightattendants','passengercount','scheduleddeparttime','scheduledarrivaltime','scheduledblock','rotationid','aircrafttype','flighttime','distance'])
+    for flight in flights:
+        writer.writerow([flight.flightdate,flight.aircraftId,flight.departure,flight.route,flight.arrival,flight.flightnum,flight.deptime,flight.offtime,flight.ontime,flight.arrtime,flight.landings,flight.imc,flight.hood,flight.iap,flight.typeofapproach,flight.descriptionofapproach,flight.holdnumber,flight.holdboolean,flight.pic,flight.sic,flight.cfi,flight.dual,flight.crosscountry,flight.solo,flight.total,flight.day,flight.daylandings,flight.night,flight.nightlandings,flight.printcomments,flight.personalcomments,flight.ftd,flight.ftdimc,flight.sim,flight.pcatd,flight.pcimc,flight.instructor,flight.instructorid,flight.student,flight.studentid,flight.captain, flight.firstofficer,flight.flightattendants,flight.passengercount,flight.scheduleddeparttime,flight.scheduledarrivaltime,flight.scheduledblock,flight.rotationid,flight.aircrafttype,flight.flighttime,flight.distance])
+    
+
+    return response
