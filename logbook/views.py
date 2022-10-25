@@ -50,7 +50,7 @@ class LogbookDisply(ListView):
     
 
     def get_queryset(self, *args, **kwargs):
-        logbookdisplay = FlightTime.objects.all().filter(userid=getuserid()).exclude(scheduledflight=True).order_by('-flightdate')
+        logbookdisplay = FlightTime.objects.all().filter(userid=getuserid()).exclude(scheduledflight=True).order_by('-flightdate','scheduleddeparttime')
         return logbookdisplay
 
 def converttoUTC(time,timezone):
@@ -543,28 +543,26 @@ class EditEntry(LogbookEntry,UpdateView):
     model = FlightTime
     form = FlightTimeEntry
     pk_url_kwarg = 'id'
-    template_name = 'logbook/main.html'
+    template_name = 'logbook/editflight.html'
     success_url = '/logbook'
     
 
     # def get_initial(self,**kwargs):
     #     context = super(EditEntry, self).get_initial()
-    #     context['form'] = self.form_class(instance=self.request.user,       initial={
+    #     context['form'] = self.form_class(instance=self.request.user,initial={
     #             'departure': self.get_object().departure,
     #             'arrival': self.get_object().arrival,
     #     })
-    #     print(context['form']['departure'].value())
+        
         
     #     initial = super(EditEntry, self).get_initial()
     #     try:
     #         departure = self.get_object().departure
-    #         print(departure)
     #         arrival = self.get_object().arrival
     #     except:
     #         pass
     #     else:
     #         initial['departure'] = departure
-    #         print(initial['departure'])
     #         initial['arrival'] = arrival
     #     return initial
 

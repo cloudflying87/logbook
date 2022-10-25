@@ -62,10 +62,24 @@ class FlightTime(models.Model):
     scheduledblock = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
     rotationid = models.CharField(max_length=50,blank=True,null=True)
     scheduledflight = models.BooleanField(blank=True,null=True)
+    deadheadflight = models.BooleanField(blank=True,null=True)
     aircrafttype = models.ForeignKey(AircraftModel,default ='B737-800',on_delete=models.SET_DEFAULT)
     flighttime = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
     distance = models.IntegerField(blank=True,null=True)
-    
-    
+    scheduleddeparttimelocal = models.TimeField(blank=True,null=True)
+    scheduledarrivaltimelocal = models.TimeField(blank=True,null=True)
+    deptimelocal = models.TimeField(blank=True,null=True)
+    offtimelocal = models.TimeField(blank=True,null=True)
+    ontimelocal= models.TimeField(blank=True,null=True)
+    arrtimelocal = models.TimeField(blank=True,null=True)
+    reporttime = models.TimeField(blank=True,null=True)
+    reporttimelocal = models.TimeField(blank=True,null=True)
+    minutesunder = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
+    flightupdated = models.DateTimeField(blank=True,null=True)
+    flightcreated = models.DateTimeField(blank=True,null=True)
+    domestic = models.BooleanField(blank=True,null=True)
+    international = models.BooleanField(blank=True,null=True)
+    paycode = models.CharField(max_length=50,blank=True,null=True)
+
     def __str__(self):
         return '{} {} {} {} {}'.format(self.flightdate,self.departure,self.arrival,self.aircraftId,self.personalcomments)

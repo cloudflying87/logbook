@@ -7,10 +7,10 @@
     
     <a href="../edit/{{flight.id}}"> {{flight.flightdate }} </a>  {{flight.aircraftId}} {{flight.departure}} - {{flight.arrival}} {{flight.flightnum}} {{flight.aircrafttype}}
     <br>Scheduled Times
-    <br>Depart: <class = time2>{{flight.scheduleddeparttime}}</class> Arrival: {{flight.scheduledarrivaltime}} Block: {{flight.scheduledblock}}
+    <br>{{flight.scheduleddeparttimelocal|time:"H:i"}}-{{flight.scheduledarrivaltimelocal|time:"H:i"}}  {{flight.scheduledblock}}
     <br> Actual Times
-    <br> Out: {{flight.deptime}} Off:
-    {{flight.offtime}} On: {{flight.ontime}} In: {{flight.arrtime}}
+    <br> Out: {{flight.deptime|time:"H:i"}} Off:
+    {{flight.offtime|time:"H:i"}} On: {{flight.ontime|time:"H:i"}} In: {{flight.arrtime|time:"H:i"}}
     <br> Pilot Times 
     <br>Total: {{flight.total}} Day: {{flight.day}} Landings: {{flight.daylandings}} Night: {{flight.night}} CX: {{flight.crosscountry}}
     <br> Pax: {{flight.passengercount}}   {{flight.distance}}NM  Rotation: {{flight.rotationid}}
