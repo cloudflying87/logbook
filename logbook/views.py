@@ -312,8 +312,9 @@ class LogbookEntry(FormView):
 
             
             total= calculatetimes(deptime,arrtime,decimalplaces,decimal)
-            if total < instance.scheduledblock:
-                instance.minutesunder = instance.scheduledblock-Decimal(total) 
+            if instance.scheduledblock != None:
+                if total < instance.scheduledblock:
+                    instance.minutesunder = instance.scheduledblock-Decimal(total) 
                 
             
             
