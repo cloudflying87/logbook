@@ -1,0 +1,46 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Tail Number Summary</h1>
+<br>
+<a  href="{% url 'categoryall' %}">Category Lookup</a>
+<br>
+<div id="selectplacement" >
+    <!-- <select id='secondoption' style= 'width: 25%'></select> -->
+</div>
+<br>
+<div id="lookupdiv"></div>
+
+<script>
+$('#selectplacement').append("<select id='taillookup' style= 'width: 25%'></select>")
+            selecturl2 = "{% url 'taillookup' %}"
+            $('#taillookup').select2({
+                ajax: {
+                    url: selecturl2,
+                    data: function (params) {
+                        var query = {
+                            q: params.term,
+                        }
+                    return query;
+                    }
+                    
+                }
+                })
+$("#selectplacement").on("select2:select", "#taillookup", function (e){
+    url = "{% url 'taillookupdisplay' %}"
+    $.ajax({                       
+    url: url,  
+    data: {
+        "lookup": e.params.data,
+        "option": "tailnumber"
+    },
+    success: function (data) {   
+        $("#lookupdiv").html(data); 
+    }
+    });
+})
+
+  </script>
+{% endblock%}

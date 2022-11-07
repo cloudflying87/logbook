@@ -1,11 +1,3 @@
-<select name="reports" id="manufactureselect">
-        <option>Select Manufacture</option>
-    {% for item in manufacture%}
-       <option value = {{item.id}}>{{item.manufacture}}</option> 
-    {% endfor %} 
-</select>
-<br>
-<br>
 <table class = 'center'>
     
         <tr>
@@ -35,10 +27,4 @@
             <td>{{item.info.aircraftsummary.landings}}</td>
         </tr>
         {% endfor %}
-</table>    
-
-<table class = 'center'>
-    
-    
-</table>  
-
+</table> 

@@ -1,7 +1,6 @@
 <select name="reports" id="lookupselect">
     <option>Select Item to Look-up</option>
     <option value = airport>Airport</option> 
-    <option value = tailnumber>Tail-Number</option>
     <option value = pilot>Pilot</option>
 </select>
 <br>
@@ -46,20 +45,7 @@
             $('#selectplacement').empty()
             $('#lookupdiv').empty()
 
-            $('#selectplacement').append("<select id='taillookup' style= 'width: 25%'></select>")
-            selecturl2 = "{% url 'taillookup' %}"
-            $('#taillookup').select2({
-                ajax: {
-                    url: selecturl2,
-                    data: function (params) {
-                        var query = {
-                            q: params.term,
-                        }
-                    return query;
-                    }
-                    
-                }
-                })
+            
             
         };
         if ($("#lookupselect").val() == 'pilot'){
@@ -85,18 +71,6 @@ $("#selectplacement").on("select2:select", "#airportlookup", function (e){
     });
 })
 
-$("#selectplacement").on("select2:select", "#taillookup", function (e){
-    url = "{% url 'taillookupdisplay' %}"
-    $.ajax({                       
-    url: url,  
-    data: {
-        "lookup": e.params.data,
-        "option": "tailnumber"
-    },
-    success: function (data) {   
-        $("#lookupdiv").html(data); 
-    }
-    });
-})
+
 </script>
 

@@ -5,7 +5,8 @@
 {% include 'logbook/navbar.html' %}    
 <h1>Aircraft Summary</h1>
 
-
+<a  href="{% url 'tailbase' %}">Tail Number Look up</a>
+<br>
 <select name="reports" id="manufactureselect">
   <option>Select Manufacture</option>
 {% for item in manufacture%}

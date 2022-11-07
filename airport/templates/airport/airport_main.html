@@ -8,8 +8,9 @@
 <body class = "text-center">
   <form method=POST action="{% url 'searchairport' %}" class="form-main">
     {% csrf_token %}
-    <input type="search" class="form-control rounded" placeholder="Search Airport" aria-label="Search"
-    aria-describedby="search-addon" name="airport_searched" />
+    <select type="search" class="form-control rounded" placeholder="Search Airport" aria-label="Search"
+    aria-describedby="search-addon" name="airport_searched" id="ajaxlookup"></select>
+    
     <button type="submit" class="btn btn-outline-primary">search</button>
   </form>
   {% if messages %}
@@ -25,6 +26,19 @@
   <div id="lookupdiv"></div>
 </body>
 <script>
+  url = '{% url "autocomplete" %}'
+  $('#ajaxlookup').select2({
+        ajax: {
+            url: url,
+            data: function (params) {
+                var query = {
+                    q: params.term,
+                }
+            return query;
+            }
+            
+        }
+        });
   url = "{% url 'topairports' %}"
                 $.ajax({                       
                 url: url,  

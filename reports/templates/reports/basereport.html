@@ -10,27 +10,30 @@
 
 <select name="reports" id="report-select">
     <option value="">--Please choose an option--</option>
-    <option value="totals">Totals</option>
-    <option value="totalsbydate">Totals By Date</option>
-    <option value="category">Category</option>
     <option value="lookup">Lookup</option>
     
 </select>
 <br>
 
-<div id="display">
-
-
+<div id="totals">
 </div>
+<div id="display">
+</div>
+
 
  <script>
   
+  url = "{% url 'totals' %}"
+      $.ajax({                       
+      url: url,  
+      data: {
+      },
+      success: function (data) {   
+        $("#totals").html(data); 
+      }
+    })
 
-document.addEventListener('input', function (event) {
-  
-  if (event.target.id === 'report-select'){
-    if (event.target.value === 'totals') {
-      url = "{% url 'totals' %}"
+    url = "{% url 'totalsbydate' %}"
       $.ajax({                       
       url: url,  
       data: {
@@ -38,8 +41,10 @@ document.addEventListener('input', function (event) {
       success: function (data) {   
         $("#display").html(data); 
       }
-    });
-    }
+    })
+document.addEventListener('input', function (event) {
+  
+  if (event.target.id === 'report-select'){
     if (event.target.value === 'lookup') {
       url = "{% url 'lookup' %}"
       $.ajax({                       
@@ -52,45 +57,8 @@ document.addEventListener('input', function (event) {
     });
     }
 
-    if (event.target.value === 'category') {
-      url = "{% url 'category' %}"
-      $.ajax({                       
-      url: url,  
-      data: {
-      },
-      success: function (data) {   
-        $("#display").html(data); 
-      }
-    });
-    }
-    if (event.target.value === 'totalsbydate') {
-      url = "{% url 'totalsbydate' %}"
-      $.ajax({                       
-      url: url,  
-      data: {
-      },
-      success: function (data) {   
-        $("#display").html(data); 
-      }
-    });
-    }
-    
   }
     
-  if (event.target.id === 'manufactureselect'){
-    
-    url = "{% url 'category' %}"
-      $.ajax({                       
-      url: url,  
-      data: {
-        "category":$("#manufactureselect").val()
-      },
-      success: function (data) {   
-        $("#display").html(data); 
-      }
-    });
-  }
-
 
 });
 

@@ -3,14 +3,13 @@
 
 {% block content %}
 {% include 'logbook/navbar.html' %}    
-<h1>Airline Logbook page</h1>
+<h1>Flightaware </h1>
 <div class = 'mainlogbook'>
-    <form method=POST action="{% url 'export' %}" class="form-main">
+    <form method=POST action="{% url 'dateselector' %}" class="form-main">
         {% csrf_token %}
-        {{form}}
+        {% load crispy_forms_tags %}
+        {% crispy form %}
     </form>
-
-    {{info}}
     
 </div>
 

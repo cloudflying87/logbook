@@ -2,6 +2,7 @@ from cmd import PROMPT
 import sys
 from calendar import month
 import secrets
+from xml import dom
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from airport.models import Airport
@@ -18,13 +19,12 @@ from datetime import datetime,timedelta
 import time
 import airport
 from airport.views import gettingairport
-from django.views.generic import FormView,View,ListView
+from django.views.generic import TemplateView,View,ListView, FormView
 from airline.models import AirlineSchedule
 import datetime
 import os.path
 import re
 from google.auth.transport.requests import Request
-
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 import google_auth_oauthlib
@@ -33,6 +33,7 @@ from googleapiclient.errors import HttpError
 from django.views.generic.edit import UpdateView
 from user.forms import UserPreferences
 from user.views import getuserid
+import requests
 
 state = ''
 
@@ -198,7 +199,7 @@ def importingevents(request):
                         reporttime = reporttimeraw[:2]+':'+reporttimeraw[2:]
                         reporttimeswitch = True
                         flightdate = (item[-5:])
-                    if item[:2] =="D ":
+                    if item[:2] =="D " or item[:2] =="O ":
                         leg = item[2:]
                         legsplit = leg.split()
                         deadhead = True
@@ -214,17 +215,20 @@ def importingevents(request):
         page_token = events.get('nextPageToken')
         if not page_token:
             break
-    print(monthrotations)
+    
     return render(request, 'airline/masterschedule.html', {'added': added,'notadded':notadded}) 
 
 def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhead):
     #getting all of the retreived calendar information in the correct format and then saving it to the database. Done leg by leg. 
-    # this currently works with google and the way micrew exports to google
-    #calendar
+    # this currently works with google and the way micrew exports to google calendar via apple calendar
 
     #this will not have the correct date for a trip that goes across new years day. But I am getting the year from the start of the trip
+    # This has problems with the day that Daylight savings switches
     flightdate = (datetime.datetime.strptime(tripyear+legdate,'%Y%d%b')).date()
-    unixdate = time.mktime(flightdate.timetuple())
+
+    flightdatetime = (datetime.datetime.strptime(tripyear+legdate+reporttime,'%Y%d%b%H:%M'))
+
+    unixdate = time.mktime(flightdatetime.timetuple())
     flightnumber = leg[0][2:]
     airports = leg[1].split('-')
     times = leg[2].split('-')
@@ -234,6 +238,12 @@ def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhe
     arrivalairportinfo = gettingairport(airports[1],unixdate)
     arrivalairport = arrivalairportinfo['airport']['icao']
     
+    if departairportinfo['airport']['country'] != 'US' or arrivalairportinfo['airport']['country'] != 'US': 
+        international = True
+        domestic = False
+    else: 
+        international = False
+        domestic = True
     # #correcting for plus or minus GMT
     departuretime = converttoUTC(times[0],departairportinfo['gmt_offset_single'])
 
@@ -255,6 +265,7 @@ def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhe
     leg = [flightdate.strftime("%m/%d/%Y"),flightnumber,departairport,arrivalairport,departuretime,arrivaltime,blocktime,rotationid]
 
     if not FlightTime.objects.filter(userid=getuserid(),flightdate=flightdate,flightnum=flightnumber,departure=departairport,arrival=arrivalairport,scheduleddeparttime=departuretime).exists():
+        
         flighttime = FlightTime()
         flighttime.userid = getuserid()
         flighttime.aircraftId = NewPlaneMaster.objects.get(nnumber = 'N802DN')
@@ -271,19 +282,108 @@ def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhe
         flighttime.reporttime = reporttimeutc
         flighttime.reporttimelocal = reporttime
         flighttime.deadheadflight = deadhead
-        
+        flighttime.international = international
+        flighttime.domestic = domestic
         flighttime.scheduledflight = True
+        flighttime.flightcreated = datetime.datetime.now()
         flighttime.save()
 
         added.append(leg)
     else:
         notadded.append(leg)
 class DeltaScheduleEntry(ListView):
-    
+    #for showing scheduled flights
     model = FlightTime
     template_name = 'airline/schedule.html'
     context_object_name = "flight_list"
 
     def get_queryset(self, *args, **kwargs):
+        todaydate = datetime.datetime.now()
+        scheduledflightdatecutoff = todaydate - timedelta(days=3)
+        # print(scheduledflightdatecutoff)
+        logbookdisplay = FlightTime.objects.all().filter(userid=getuserid(),scheduledflight=True,flightdate__gt=scheduledflightdatecutoff).order_by('flightdate','scheduleddeparttimelocal')
+        return logbookdisplay
+class DeletemultipleQuery(ListView):
+    
+    model = FlightTime
+    template_name = 'airline/deletemultiple.html'
+    context_object_name = "flight_list"
+
+    def get_queryset(self, *args, **kwargs):
         logbookdisplay = FlightTime.objects.all().filter(userid=getuserid(),scheduledflight=True).order_by('flightdate','scheduleddeparttimelocal')
         return logbookdisplay
+
+
+class DeleteMultipleFlights(FormView):
+    
+
+    def get(self,form):
+        print('valid')
+        
+
+def flightaware(ident,startdate,enddate):
+        # ident = 'DAL2183'
+        # startdate = '2022-10-09T17:59Z'
+        # enddate = '2022-10-09T21:09Z'
+        params = {"start":startdate,"end":enddate}
+        endpoint = "https://aeroapi.flightaware.com/aeroapi/flights/{fident}"
+        url = endpoint.format(fident=ident)
+        
+        headers = {'x-apikey': os.getenv('flightawareapi')}
+        response = requests.get(url, params=params, headers=headers)
+        
+        endpoint = "https://aeroapi.flightaware.com/aeroapi/history/flights/{fident}"
+        url = endpoint.format(fident=ident)
+        
+        headers = {'x-apikey': os.getenv('flightawareapi')}
+        response = requests.get(url, params=params, headers=headers)
+        
+        if response.status_code == 200:  # SUCCESS
+            result = response.json()
+            
+            if result['flights']:
+                departairport = result['flights'][0]['origin']['code_icao']
+                arrivalairport = result['flights'][0]['destination']['code_icao']
+                flightnum = result['flights'][0]['ident_iata']
+                tailnumber = result['flights'][0]['registration']
+                scheduledout = result['flights'][0]['scheduled_out']
+                if scheduledout != None:
+                    scheduledout = changetonormaltime(scheduledout)
+                actualout = result['flights'][0]['actual_out']
+                if actualout != None:
+                    actualout = changetonormaltime(actualout)
+                scheduledoff = result['flights'][0]['scheduled_off']
+                if scheduledoff != None:
+                    scheduledoff = changetonormaltime(scheduledoff)
+                actualoff = result['flights'][0]['actual_off']
+                if actualoff != None:
+                    actualoff = changetonormaltime(actualoff)
+                scheduledon = result['flights'][0]['scheduled_on']
+                if scheduledon != None:
+                    scheduledon = changetonormaltime(scheduledon)
+                actualon = result['flights'][0]['actual_on']
+                if actualon != None:
+                    actualon = changetonormaltime(actualon)
+                scheduledin = result['flights'][0]['scheduled_in']
+                if scheduledin != None:
+                    scheduledin = changetonormaltime(scheduledin)
+                actualin = result['flights'][0]['actual_in']
+                if actualin != None:
+                    actualin = changetonormaltime(actualin)
+                departgate = result['flights'][0]['gate_origin']
+                arrivalgate = result['flights'][0]['gate_destination']
+                airspeed = result['flights'][0]['filed_airspeed']
+                filedalt = result['flights'][0]['filed_altitude']
+                route = result['flights'][0]['route']
+
+                flight = {'departairport':departairport, 'arrivalairport':arrivalairport, 'tailnumber':tailnumber, 'flightnum':flightnum, 'scheduledout': scheduledout, 'actualout': actualout,'scheduledoff':scheduledoff,'actualoff':actualoff,'scheduledon':scheduledon,'actualon':actualon,'scheduledin':scheduledin,'actualin':actualin, 'departgate':departgate,'arrivalgate':arrivalgate,'airspeed':airspeed,'filedalt':filedalt,'route':route}
+            else:
+                flight = 'missing'
+        else:
+            flight = 'missing'
+        
+        return flight
+
+def changetonormaltime(time):
+    fixed = time[11:16]
+    return fixed

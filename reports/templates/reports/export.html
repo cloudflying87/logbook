@@ -6,6 +6,9 @@
 <h1>Export Reports</h1>
 
 <a href="{% url 'exportflighttimeall' %}">Export Flight Table All</a><br>
+<!-- <a href="{% url 'dateselector' %}">Flight Aware</a><br> -->
+<!-- <a href="{% url 'editing' %}">Edit</a><br> -->
+
 
 <p>Select Dates for Export Table: </p>
 <form method=POST action="{% url 'export' %}" class="form-main">
@@ -20,7 +23,6 @@
     <input type="checkbox" id="endall" name="endall"><br>
     <button type="submit" class="btn btn-outline-primary">Export</button>
 </form>
-
 
 
 {%endblock%}

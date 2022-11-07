@@ -1,9 +1,12 @@
 import csv
+from decimal import Decimal
+from pipes import Template
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
 from django_currentuser.middleware import (
     get_current_user)
+from django.views.generic.base import TemplateView
 from django.views.generic import FormView, DetailView
 from django.views.generic.list import ListView
 from django.views.generic.edit import UpdateView, DeleteView
@@ -273,6 +276,17 @@ class LogbookEntry(FormView):
         if form['arrival'].value() != '':
             arrairport = form['arrival'].value()
             arrairportinfo = gettingairportinfo(arrairport,unixdate,flightdate)
+            
+        
+        if (instance.domestic == 0 or instance.domestic == None) and (instance.international == 0 or instance.international == None):
+            if depairportinfo[0]['airport']['country'] != 'US' or arrairportinfo[0]['airport']['country'] != 'US': 
+                instance.international = True
+                instance.domestic = False
+            else: 
+                instance.international = False
+                instance.domestic = True
+
+
         #Setting landings to correctly
         if form['landings'].value() != '':
             landings = instance.landings
@@ -280,7 +294,6 @@ class LogbookEntry(FormView):
             landings = 0
         #calculating block time
         if form['arrtime'].value() != "" and form['deptime'].value() != "":
-            print(form['arrtime'].value())
             arrtime = fixtime(form['arrtime'].value())
             deptime = fixtime(form['deptime'].value())
 
@@ -299,6 +312,9 @@ class LogbookEntry(FormView):
 
             
             total= calculatetimes(deptime,arrtime,decimalplaces,decimal)
+            if total < instance.scheduledblock:
+                instance.minutesunder = instance.scheduledblock-Decimal(total) 
+                
             
             
             #Setting all the values based on user preferences, these times are set to autolog
@@ -343,6 +359,8 @@ class LogbookEntry(FormView):
                 if landings > 0:
                     instance.nightlandings = nightcalc[2]
                     instance.daylandings = nightcalc[3]
+                
+                instance.flightupdated = datetime.utcnow()
         
         instance.save()
         return super().form_valid(form)
@@ -545,26 +563,6 @@ class EditEntry(LogbookEntry,UpdateView):
     pk_url_kwarg = 'id'
     template_name = 'logbook/editflight.html'
     success_url = '/logbook'
-    
-
-    # def get_initial(self,**kwargs):
-    #     context = super(EditEntry, self).get_initial()
-    #     context['form'] = self.form_class(instance=self.request.user,initial={
-    #             'departure': self.get_object().departure,
-    #             'arrival': self.get_object().arrival,
-    #     })
-        
-        
-    #     initial = super(EditEntry, self).get_initial()
-    #     try:
-    #         departure = self.get_object().departure
-    #         arrival = self.get_object().arrival
-    #     except:
-    #         pass
-    #     else:
-    #         initial['departure'] = departure
-    #         initial['arrival'] = arrival
-    #     return initial
 
 class ViewEntry(DetailView):
     
@@ -581,4 +579,3 @@ class DeleteEntry(DeleteView):
     template_name = 'logbook/confirmdelete.html'
     success_url = '/logbook'
    
-    

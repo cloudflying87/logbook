@@ -24,8 +24,9 @@ class AirlineSchedule(models.Model):
         return self.rotationnumber
 
 class PayTables(models.Model):
-    paydate = models.DateField(default=utils.timezone.now)
+    effectivedate = models.DateField(default=utils.timezone.now)
     aircraft = models.CharField(max_length=4,null=True,blank=True)
+    yearsofservice = models.IntegerField(default = 1)
     payamount = models.DecimalField(max_digits=8, blank=True, decimal_places=2,null=True)
     position = models.CharField(max_length=2,null=True,blank=True)
     airline = models.ForeignKey(AirlineList,default ='', max_length=100,on_delete=models.SET_DEFAULT)

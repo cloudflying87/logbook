@@ -1,0 +1,27 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %} 
+
+<h2>Delete Scheduled Flights</h2>
+<form method=GET action="{% url 'deletemultiple' %}" class="form-main">
+    {% csrf_token %}
+    {% for flight in flight_list %}
+    
+        <input type="checkbox" id={{flight.id}} value={{flight.id}}>   {{flight.flightdate }} {{flight.departure}} {{flight.arrival}} {{flight.flightnum}}
+        {% if flight.deadheadflight %}
+                DH
+        {% endif %}
+        {{flight.rotationid}} {{flight.scheduleddeparttimelocal|time:"H:i"}}-{{flight.scheduledarrivaltimelocal|time:"H:i"}}
+        </br>
+
+    {% empty %}
+        <li>No objects yet.</li>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-outline-primary">Delete</button>
+  </form>
+
+
+{% endblock %}

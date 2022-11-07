@@ -32,4 +32,4 @@ class PassengerPathInfoFix(object):
 # Set the application
 application = get_wsgi_application()
 application = PassengerPathInfoFix(application)
-application = WhiteNoise(application, root='/home/flyhomem/logbook.flyhomemn.com/staticcollection')
+application = WhiteNoise(application, root='/home/flyhomem/logbook/staticcollection')
