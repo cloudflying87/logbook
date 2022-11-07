@@ -16,28 +16,15 @@
         {% empty %}
         <li>No objects yet.</li>
     {% endfor %}
-
-    {% for page_number in page_obj.paginator.page_range %}
-            <a
-                href="{% url 'logbookdisplay'%}?page={{page_number}}"
-                class="{% if page_number == page_obj.number %}current{% endif %}"
-            >
-                {{page_number}}
-            </a>
-    {% endfor %}
- 
-{% endblock%}
-
-{% block pagination %}
     
-{% endblock %}
+    <p>Current Page: <b>{{page_obj.number}}</b></p>
 
-{% comment %}
-{#.... **{% for page_number in page_obj.paginator.get_elided_page_range %}
+
+    {% for page_number in page_obj.paginator.get_elided_page_range %}
         {% if page_number == page_obj.paginator.ELLIPSIS %}
             {{page_number}}
         {% else %}
-            <a
+                <a
                 href="{% url 'logbookdisplay'%}?page={{page_number}}"
                 class="{% if page_number == page_obj.number %}current{% endif %}"
             >
@@ -45,6 +32,6 @@
             </a>
         {% endif %}
     {% endfor %}
-.... #}
 
-{% endcomment %}
+    
+{% endblock%}
