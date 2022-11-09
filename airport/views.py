@@ -4,6 +4,10 @@ from django.shortcuts import render
 from .models import Airport, Timezone, Zone
 from suntime import Sun, SunTimeException
 import time, datetime
+from user.views import getuserid
+from django.views.generic.base import TemplateView
+from logbook.models import FlightTime
+from django.db.models import Q
 
 @login_required(login_url='/')
 def airporthome(request):
@@ -49,29 +53,6 @@ def airporturl(request,icao):
         return render(request, 'airport/airport_main.html', {})
     else:
         return render(request,'airport/airportsearch.html', {'airport':gatheredinfo['airport'],'timezoneinfo':gatheredinfo['timezoneinfo'],'gmt_offset_single':gatheredinfo['gmt_offset_single'], 'daylightsavings':gatheredinfo['daylightsavings']})
-
-
-def searchairport(request):
-    if request.method == "POST":
-        airport_searched = request.POST['airport_searched']
-        #Handles the blank form entry
-        if airport_searched == '':
-            messages.success(request,"You forgot to type in an airport")
-            return render(request, 'airport/airport_main.html', {})
-        
-        passingtime = time.time()
-        gatheredinfo = gettingairport(airport_searched,passingtime)
-
-        #handles the aiport object from the database
-        if gatheredinfo == 'missing':
-            messages.success(request,airport_searched+" Not Found")
-            return render(request, 'airport/airport_main.html', {})
-        else:
-            return render(request,'airport/airportsearch.html', {'airport':gatheredinfo['airport'],'timezoneinfo':gatheredinfo['timezoneinfo'],'gmt_offset_single':gatheredinfo['gmt_offset_single'], 'daylightsavings':gatheredinfo['daylightsavings']})
-
-    else:
-        return render(request, 'airport/airport_main.html', {})
-
 
 def getsuntimes(date,latitude,longitude):
     sun = Sun(latitude, longitude)
@@ -130,3 +111,28 @@ def sunriseset(request):
         return render(request, 'airport/sunriseset.html', {'sunrise':suntimes['sunriseLocal'],'sunset':suntimes['sunsetLocal']})
     else:
         return render(request, 'airport/sunriseset.html',{})
+
+
+class AirportLookup(TemplateView):
+    template_name = 'reports/airportreport.html'
+    
+    def get(self, request, *args, **kwargs):
+        
+        airportcount = []
+        pagetitle = "Airports"
+        userid = getuserid()
+        secondrequest = request.GET.get('lookup[id]')
+
+        depart = FlightTime.objects.filter(Q(departure=secondrequest) | Q(arrival=secondrequest),userid=userid).exclude(Q(scheduledflight=1) | Q(total=0)).order_by('-flightdate')
+
+        return self.render_to_response({'total':depart.count(),'depart':depart,"title":pagetitle})
+
+class SearchAirport(TemplateView):
+    template_name = 'airport/airportsearch.html'
+
+    def get(self, request, *args, **kwargs):
+        secondrequest = request.GET.get('lookup[id]')
+        passingtime = time.time()
+        gatheredinfo = gettingairport(secondrequest,passingtime)
+        
+        return self.render_to_response({'airport':gatheredinfo['airport'],'timezoneinfo':gatheredinfo['timezoneinfo'],'gmt_offset_single':gatheredinfo['gmt_offset_single'], 'daylightsavings':gatheredinfo['daylightsavings']})

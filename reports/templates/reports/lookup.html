@@ -56,20 +56,7 @@
     })
 
 
-$("#selectplacement").on("select2:select", "#airportlookup", function (e){
-    $('#lookupdiv').empty()
-    url = "{% url 'airportlookup' %}"
-    $.ajax({                       
-    url: url,  
-    data: {
-        "lookup": e.params.data,
-        "option": "airport"
-    },
-    success: function (data) {   
-        $("#lookupdiv").html(data); 
-    }
-    });
-})
+
 
 
 </script>

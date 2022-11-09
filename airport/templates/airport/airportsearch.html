@@ -1,17 +1,9 @@
-{% extends 'logbook/base.html' %}
-
-
-{% block content %}
-{% include 'logbook/navbar.html' %} 
-{% include 'airport/navbar.html' %}
-        <h2>{{ airport.icao }}</h2>
-        <p>{{ airport.lat }}/{{ airport.long }}</p>
-        <h3>{{ airport.name }}</h3>
-        <p>{{ airport.iata }}</p>
-        <h3>{{ airport.city }}, {{ airport.state }}, {{ airport.country }}</h3>
-        <h4>{{ timezoneinfo.abbrevation }}</h4>
-        <h4>GMT Offset: {{ gmt_offset_single }}</h4>
-        <h4>On Daylight savings? {{ daylightsavings }}</h4>
-        <h4>{{ airport.elevation }} Feet</h4>
-
-{% endblock %}
+<h2>{{ airport.icao }}</h2>
+<p>{{ airport.lat }}/{{ airport.long }}</p>
+<h3>{{ airport.name }}</h3>
+<p>{{ airport.iata }}</p>
+<h3>{{ airport.city }}, {{ airport.state }}, {{ airport.country }}</h3>
+<h4>{{ timezoneinfo.abbrevation }}</h4>
+<h4>GMT Offset: {{ gmt_offset_single }}</h4>
+<h4>On Daylight savings? {{ daylightsavings }}</h4>
+<h4>{{ airport.elevation }} Feet</h4>

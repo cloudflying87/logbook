@@ -6,13 +6,7 @@
 <h1>Report Page</h1>
 
 <a href="{% url 'export' %}">Export Options</a><br>
-<label for="report-select">Choose a Report:</label>
 
-<select name="reports" id="report-select">
-    <option value="">--Please choose an option--</option>
-    <option value="lookup">Lookup</option>
-    
-</select>
 <br>
 
 <div id="totals">
@@ -42,25 +36,6 @@
         $("#display").html(data); 
       }
     })
-document.addEventListener('input', function (event) {
-  
-  if (event.target.id === 'report-select'){
-    if (event.target.value === 'lookup') {
-      url = "{% url 'lookup' %}"
-      $.ajax({                       
-      url: url,  
-      data: {
-      },
-      success: function (data) {   
-        $("#display").html(data); 
-      }
-    });
-    }
-
-  }
-    
-
-});
 
   
   </script>

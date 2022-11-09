@@ -1,0 +1,18 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Create PDF</h1>
+<div class = 'mainlogbook'>
+    <form method=POST action="{% url 'pdf' %}" class="form-main">
+        {% csrf_token %}
+        {{form}}
+    </form>
+
+    {{info}}
+    
+</div>
+
+</script>
+{% endblock%}

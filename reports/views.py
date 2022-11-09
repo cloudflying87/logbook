@@ -2,6 +2,7 @@ from cmath import log
 import os
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
+from user.views import getuserid
 from django.views.generic.base import TemplateView
 from django.views.generic import FormView, DetailView
 from django.views.generic.list import ListView
@@ -14,7 +15,7 @@ from user.models import Users
 from django.contrib.auth.models import User
 from django_currentuser.middleware import (
     get_current_user)
-from user.views import getuserid
+
 from airline.views import flightaware
 from django.core.paginator import Paginator
 from django.db.models import Count,Sum,Avg
@@ -24,6 +25,9 @@ import datetime
 import requests
 import csv
 from django.http import HttpResponse
+import io
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
 
 @login_required(login_url='/')
 def reporthome(request):
@@ -96,23 +100,6 @@ class TopAirports(TemplateView):
             makedict.append(dictitem)
         
         return self.render_to_response({'depart':makedict,"title":pagetitle,'unique':len(topfive)})
-class AirportLookup(TemplateView):
-    template_name = 'reports/airportreport.html'
-    
-    def get(self, request, *args, **kwargs):
-        airportcount = []
-        pagetitle = "Airports"
-        userid = getuserid()
-        secondrequest = request.GET.get('lookup[id]')
-        
-        depart = FlightTime.objects.filter(Q(departure=secondrequest) | Q(arrival=secondrequest),userid=userid).exclude(Q(scheduledflight=1) | Q(total=0)).order_by('-flightdate')
-        return self.render_to_response({'total':depart.count(),'depart':depart,"title":pagetitle})
-
-#This is used to get the lookup page started
-
-
-
-
 class TotalsDisplay(TemplateView):
     template_name = 'reports/datebase.html'
 
@@ -253,6 +240,43 @@ class FlightawareRequest(FormView):
         return response
         return super().form_valid(form)
     
+class PDFExport(TemplateView):
+    template_name = 'reports/importpastflighttimes.html'
+    # form_class = DateSelector
+    # success_url = '/reports/dates'
+
+    def form_valid(self,form):
+    #     userid=getuserid()
+    #     if form['frombeginning'].value():
+    #         startdate = True
+    #     else:
+    #         startdate = form['startdate'].value()
+
+    #     if form['toend'].value():
+    #         enddate = True
+    #     else:
+    #         enddate = form['enddate'].value()
+
+    #     flights = callingdatabasedates(startdate,enddate,userid)
+
+        buffer = io.BytesIO()
+
+        # Create the PDF object, using the buffer as its "file."
+        p = canvas.Canvas(buffer)
+
+        # Draw things on the PDF. Here's where the PDF generation happens.
+        # See the ReportLab documentation for the full list of functionality.
+        p.drawString(100, 100, "Hello world.")
+
+        # Close the PDF object cleanly, and we're done.
+        p.showPage()
+        p.save()
+
+        # FileResponse sets the Content-Disposition header so that browsers
+        # present the option to save the file.
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename='hello.pdf')
+
 class Export(FormView):
     template_name = 'reports/export.html'
     form_class = DateSelector

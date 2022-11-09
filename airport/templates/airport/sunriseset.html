@@ -3,7 +3,7 @@
 
 {% block content %}
 {% include 'logbook/navbar.html' %} 
-{% include 'airport/navbar.html' %} 
+<a class="nav-link" href="{% url 'airporthome' %}">Airports</a>
 <body class = "text-center">
   <form method=POST action="{% url 'sunriseset' %}" class="form-main">
     {% csrf_token %}

@@ -1,9 +1,11 @@
 from django.urls import path
-from . import views
+from airport.views import AirportLookup, SearchAirport, airporthome, sunriseset,airporturl
 
 urlpatterns = [
-    path('', views.airporthome, name="airporthome"),
-    path('sunriseset', views.sunriseset, name="sunriseset"),
-    path('searchairport', views.searchairport, name="searchairport"),
-    path('<str:icao>',views.airporturl, name="gettingairport")
+    path('', airporthome, name="airporthome"),
+    path('sunriseset', sunriseset, name="sunriseset"),
+    path('searchairport', SearchAirport.as_view(), name="searchairport"),
+    path('airportlookup', AirportLookup.as_view(), name="airportlookup"),
+    path('<str:icao>',airporturl, name="gettingairport"),
+    
 ]

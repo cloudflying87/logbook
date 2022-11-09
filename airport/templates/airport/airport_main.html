@@ -4,30 +4,18 @@
 
 {% block content %}
 {% include 'logbook/navbar.html' %} 
-{% include 'airport/navbar.html' %} 
+<a class="nav-link" href="{% url 'sunriseset' %}">Sunrise and Set times</a>
 <body class = "text-center">
-  <form method=POST action="{% url 'searchairport' %}" class="form-main">
-    {% csrf_token %}
-    <select type="search" class="form-control rounded" placeholder="Search Airport" aria-label="Search"
-    aria-describedby="search-addon" name="airport_searched" id="ajaxlookup"></select>
-    
-    <button type="submit" class="btn btn-outline-primary">search</button>
-  </form>
-  {% if messages %}
-    {% for message in messages %}
-      <div class='airport display'>
-          {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
-  
+    <select type="search" class="form-control rounded form-main" placeholder="Search Airport" id="airportlookup"></select>
+</div>   
+<div id="airportinfo">
+</div>
 
-  </div>   
-  <div id="lookupdiv"></div>
+<div id="lookupdiv"></div>
 </body>
 <script>
   url = '{% url "autocomplete" %}'
-  $('#ajaxlookup').select2({
+  $('#airportlookup').select2({
         ajax: {
             url: url,
             data: function (params) {
@@ -39,6 +27,32 @@
             
         }
         });
+  $("#airportlookup").on("select2:select", function (e){
+    url = "{% url 'searchairport' %}"
+    $.ajax({                       
+    url: url,  
+    data: {
+        "lookup": e.params.data,
+        "option": "airport"
+    },
+    success: function (data) {   
+        $("#airportinfo").html(data); 
+    }
+    });
+
+    url = "{% url 'airportlookup' %}"
+    $.ajax({                       
+    url: url,  
+    data: {
+        "lookup": e.params.data,
+        "option": "airport"
+    },
+    success: function (data) {   
+        $("#lookupdiv").html(data); 
+    }
+    });
+
+})
   url = "{% url 'topairports' %}"
                 $.ajax({                       
                 url: url,  
