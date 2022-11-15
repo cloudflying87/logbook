@@ -6,7 +6,8 @@
     <h1>Summary View</h1>
     
     
-    <a href="../edit/{{flight.id}}"> DAL{{flight.flightnum}} {{flight.flightdate }} </a>  {{flight.departure}} - {{flight.arrival}} {{flight.aircraftId}}-{{flight.aircrafttype}}
+    <a href="../edit/{{flight.id}}"> DAL{{flight.flightnum}} {{flight.flightdate }} </a>  {{flight.departure}} - {{flight.arrival}} {{flight.aircraftId}}-{{flight.aircrafttype}} 
+    <br> Rotation: {{flight.rotationid}}
     
     <br>{% if depart %}
         Departed at {{flight.deptimelocal|time:"H:i"}} which was {{departmin}} minute(s) early of {{flight.scheduleddeparttimelocal|time:"H:i"}} scheduled
@@ -24,8 +25,7 @@
             under scheduled {{flight.scheduledblock}} by {{minunder}} minute(s)
         {% endif %}
     <br>Rotation Scheduled Block {{rotationinfo}}
-    <br> Pax: {{flight.passengercount}}   {{flight.distance}}NM  Rotation: {{flight.rotationid}}
-    <br>Instrument Actual: {{flight.imc}} IAP: {{flight.iap}}
+    <br> Pax: {{flight.passengercount}}   {{flight.distance}}NM  
     <br>Captain: {{flight.captain}}
     <br>{{flight.personalcomments}}
     <a href="../delete/{{flight.id}}"> Delete </a>
