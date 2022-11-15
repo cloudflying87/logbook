@@ -1,3 +1,4 @@
+from PyPDF2 import PdfReader
 from cmd import PROMPT
 import sys
 from calendar import month
@@ -34,6 +35,8 @@ from django.views.generic.edit import UpdateView
 from user.forms import UserPreferences
 from user.views import getuserid
 import requests
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 
 state = ''
 
@@ -303,6 +306,42 @@ class DeltaScheduleEntry(ListView):
         # print(scheduledflightdatecutoff)
         logbookdisplay = FlightTime.objects.all().filter(userid=getuserid(),scheduledflight=True,flightdate__gt=scheduledflightdatecutoff).order_by('flightdate','scheduleddeparttimelocal')
         return logbookdisplay
+
+class SimpleUpload(TemplateView):
+    template_name = 'airline/upload.html'
+
+    def post(self,form):
+        myfile = self.request.FILES['myfile']
+        reader = PdfReader(myfile)
+        number_of_pages = len(reader.pages)
+        page = reader.pages[4]
+        text = page.extract_text()
+        print(number_of_pages,text)
+        fs = FileSystemStorage()
+        filename = fs.save(myfile.name, myfile)
+        uploaded_file_url = fs.url(filename)
+        # return render(request, 'core/simple_upload.html', {
+        #     'uploaded_file_url': uploaded_file_url
+        # })
+
+def simple_upload(request):
+    if request.method == 'POST' and request.FILES['myfile']:
+        myfile = request.FILES['myfile']
+        
+
+        reader = PdfReader(myfile)
+        number_of_pages = len(reader.pages)
+        for pages in reader:
+            page = reader.pages[pages]
+            text = page.extract_text()
+            print(text)
+        fs = FileSystemStorage('/fixtures/BidPackage')
+        filename = fs.save(myfile.name, myfile)
+        uploaded_file_url = fs.url(filename)
+        return render(request, 'airline/upload.html', {
+            'uploaded_file_url': uploaded_file_url
+        })
+    return render(request, 'airline/upload.html')
 class DeletemultipleQuery(ListView):
     
     model = FlightTime

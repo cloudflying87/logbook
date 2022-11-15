@@ -25,7 +25,7 @@ class AirlineSchedule(models.Model):
 
 class PayTables(models.Model):
     effectivedate = models.DateField(default=utils.timezone.now)
-    aircraft = models.CharField(max_length=4,null=True,blank=True)
+    aircraft = models.CharField(max_length=30,null=True,blank=True)
     yearsofservice = models.IntegerField(default = 1)
     payamount = models.DecimalField(max_digits=8, blank=True, decimal_places=2,null=True)
     position = models.CharField(max_length=2,null=True,blank=True)

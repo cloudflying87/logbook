@@ -1,5 +1,6 @@
 import csv
 from decimal import Decimal
+from django.db.models import Count,Sum,Avg
 from pipes import Template
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -19,12 +20,13 @@ from geopy.distance import great_circle
 from django.urls import reverse_lazy
 from dal import autocomplete
 from .forms import FlightTimeEntry
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,date
 import time
 from user.models import Users
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from user.views import getuserid
+from django.urls import reverse
 
 class AirportAutoComplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
@@ -56,10 +58,10 @@ class LogbookDisply(ListView):
         logbookdisplay = FlightTime.objects.all().filter(userid=getuserid()).exclude(scheduledflight=True).order_by('-flightdate','scheduleddeparttime')
         return logbookdisplay
 
-def converttoUTC(time,timezone):
+def converttoUTC(localtime,timezone):
     #converting local times to utc returns a string
     
-    timeobject = datetime.strptime(time, '%H:%M')
+    timeobject = datetime.strptime(localtime, '%H:%M')
     if timezone < 0:
         timecorrection = timeobject + timedelta(hours=abs(timezone))
         
@@ -72,6 +74,23 @@ def converttoUTC(time,timezone):
     timecorrectionstring = timecorrection.strftime("%H:%M")
     
     return timecorrectionstring
+
+def converttolocal(utctime,timezone):
+    #converting utc times to local times returns a string
+    
+    timeobject = datetime.strptime(utctime, '%H:%M')
+    if timezone > 0:
+        timecorrection = timeobject + timedelta(hours=abs(timezone))
+        
+    if timezone < 0:
+        timecorrection = timeobject - timedelta(hours=abs(timezone))
+
+    if timezone ==0:
+        timecorrection = timeobject
+
+    timecorrectionstring = timecorrection.strftime("%H:%M")
+    return timecorrectionstring
+
 def calculatetimes(time1,time2,decimalplaces,decimal):
     #used to calculate times by subtracting time2 from time1 can be used for block time as well as flight time
     deptime = datetime.strptime(time1, '%H:%M')
@@ -247,11 +266,69 @@ def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunri
         
         return check
 
+def calculateearlylate(scheduled,actual):
+    #used calculate the difference between scheduled time
+    #and actual time
+
+    if actual < scheduled:
+        early = True
+        earlytime = datetime.combine(date.min,scheduled) - datetime.combine(date.min,actual)
+        
+    else: 
+        early = False
+        earlytime = datetime.combine(date.min,actual) - datetime.combine(date.min,scheduled)
+
+    seconds = earlytime.seconds
+    earlymin = (seconds % 3600) // 60
+    
+    return (early,earlymin)
+
+def summary(request,id):
+    #creating a summary page after a flight is logged. 
+    userid = getuserid()
+    flight = FlightTime.objects.get(id=id)
+    departuretimes = calculateearlylate(flight.scheduleddeparttimelocal,flight.deptimelocal)
+    
+    depart = departuretimes[0]
+    departmin = departuretimes[1]
+
+    arrivaltimes = calculateearlylate(flight.scheduledarrivaltimelocal,flight.arrtimelocal)
+    
+    arrive = arrivaltimes[0]
+    arrivemin = arrivaltimes[1]
+
+    if flight.minutesunder:
+        minunder = int((flight.scheduledblock - flight.total)*60)
+    else:
+        minunder = int((flight.total - flight.scheduledblock)*60)
+    rotationinfo = FlightTime.objects.filter(userid=userid,rotationid=flight.rotationid)
+    actualblock = 0
+    scheduledblock = 0
+    for flight in rotationinfo:
+
+        if flight.total != None:
+            actualblock = actualblock + flight.total
+        else:
+            actualblock = actualblock + flight.scheduledblock
+        
+        scheduledblock = scheduledblock+flight.scheduledblock
+
+    print = (actualblock,scheduledblock)
+    rotationinfo2 = (actualblock,scheduledblock)
+
+    return render(request,'logbook/summary.html', {'flight':flight,'depart':depart,'departmin':departmin,'arrive':arrive,'arrivemin':arrivemin,'rotationinfo':rotationinfo2,'minunder':minunder})
+
+# class EntrySummary(TemplateView):
+#     template_name = 'logbook/summary.html'
+
+#     def get_context_data(self, **kwargs):
+#         print(self)
+#         return super().get_context_data(**kwargs)
 class LogbookEntry(FormView):
     
     template_name = 'logbook/main.html'
     form_class = FlightTimeEntry
-    success_url = '/logbook'
+    success_url = 'logbook/summary'
 
     
     def form_valid(self,form):
@@ -296,7 +373,8 @@ class LogbookEntry(FormView):
         if form['arrtime'].value() != "" and form['deptime'].value() != "":
             arrtime = fixtime(form['arrtime'].value())
             deptime = fixtime(form['deptime'].value())
-
+            instance.deptimelocal = converttolocal(deptime,depairportinfo[0]['gmt_offset_single']) 
+            instance.arrtimelocal = converttolocal(arrtime,arrairportinfo[0]['gmt_offset_single'])
             decimalplaces = preferences[0]['decimalplaces']
             #setup for future development of hh:ss instead of decimal. 
             decimal=preferences[0]['decimal']
@@ -304,6 +382,8 @@ class LogbookEntry(FormView):
             if form['offtime'].value() != "" and form['ontime'].value() != "":
                 offtime = fixtime(form['offtime'].value())
                 ontime = fixtime(form['ontime'].value())
+                instance.offtimelocal = converttolocal(offtime,depairportinfo[0]['gmt_offset_single']) 
+                instance.ontimelocal = converttolocal(ontime,arrairportinfo[0]['gmt_offset_single'])
 
                 instance.flighttime = calculatetimes(offtime,ontime,decimalplaces,decimal)
 
@@ -362,9 +442,15 @@ class LogbookEntry(FormView):
                     instance.daylandings = nightcalc[3]
                 
                 instance.flightupdated = datetime.utcnow()
+                instance.paycode = 'reg'
         
         instance.save()
+        obj = instance.pk
         return super().form_valid(form)
+        # return self.form_valid
+    def get_success_url(self, **kwargs):
+        obj = self.object.pk
+        return reverse('summary', kwargs={'id': obj})
 
 def reworktimes2(request):
     currentuser = str(get_current_user())
@@ -563,7 +649,7 @@ class EditEntry(LogbookEntry,UpdateView):
     form = FlightTimeEntry
     pk_url_kwarg = 'id'
     template_name = 'logbook/editflight.html'
-    success_url = '/logbook'
+    success_url = '/logbook/summary'
 
 class ViewEntry(DetailView):
     

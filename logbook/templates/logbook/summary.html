@@ -1,0 +1,34 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+    <h1>Summary View</h1>
+    
+    
+    <a href="../edit/{{flight.id}}"> {{flight.flightdate }} </a>  {{flight.aircraftId}} {{flight.departure}} - {{flight.arrival}} {{flight.flightnum}} {{flight.aircrafttype}}
+    
+    <br>{% if depart %}
+        Departed at {{flight.deptimelocal|time:"H:i"}} which was {{departmin}} minute(s) early of {{flight.scheduleddeparttimelocal|time:"H:i"}} scheduled
+        {% else%} 
+        Departed at {{flight.deptimelocal|time:"H:i"}} which was {{departmin}} minute(s) late of {{flight.scheduleddeparttimelocal|time:"H:i"}} scheduled
+        {% endif %}
+    
+    <br>{% if arrive %}
+        Arrived at {{flight.arrtimelocal|time:"H:i"}} which was {{arrivemin}} minute(s) early of {{flight.scheduledarrivaltimelocal|time:"H:i"}} scheduled
+        {% else%} 
+        Departed at {{flight.arrtimelocal|time:"H:i"}} which was {{arrivemin}} minute(s) late of {{flight.scheduledarrivaltimelocal|time:"H:i"}} scheduled
+        {% endif %}
+    <br> Block was {{flight.total}} 
+        {% if flight.minutesunder %}
+            under scheduled {{flight.scheduledblock}} by {{minunder}} minute(s)
+        {% endif %}
+    <br>Rotation Scheduled Block {{rotationinfo}}
+    <br> Pax: {{flight.passengercount}}   {{flight.distance}}NM  Rotation: {{flight.rotationid}}
+    <br>Instrument Actual: {{flight.imc}} IAP: {{flight.iap}}
+    <br>Captain: {{flight.captain}}
+    <br>{{flight.personalcomments}}
+    <a href="../delete/{{flight.id}}"> Delete </a>
+    
+ 
+{% endblock%}
