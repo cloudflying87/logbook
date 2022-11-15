@@ -286,8 +286,10 @@ def calculateearlylate(scheduled,actual):
 def summary(request,id):
     #creating a summary page after a flight is logged. 
     userid = getuserid()
+
     flight = FlightTime.objects.get(id=id)
-    departuretimes = calculateearlylate(flight.scheduleddeparttimelocal,flight.deptimelocal)
+    
+    departuretimes = calculateearlylate(flight.scheduleddeparttime,flight.deptime)
     
     depart = departuretimes[0]
     departmin = departuretimes[1]
@@ -304,18 +306,16 @@ def summary(request,id):
     rotationinfo = FlightTime.objects.filter(userid=userid,rotationid=flight.rotationid)
     actualblock = 0
     scheduledblock = 0
-    for flight in rotationinfo:
+    for leg in rotationinfo:
 
-        if flight.total != None:
-            actualblock = actualblock + flight.total
+        if leg.total != None:
+            actualblock = actualblock + leg.total
         else:
-            actualblock = actualblock + flight.scheduledblock
+            actualblock = actualblock + leg.scheduledblock
         
-        scheduledblock = scheduledblock+flight.scheduledblock
+        scheduledblock = scheduledblock+leg.scheduledblock
 
-    print = (actualblock,scheduledblock)
-    rotationinfo2 = (actualblock,scheduledblock)
-
+    rotationinfo2 = (actualblock,scheduledblock)    
     return render(request,'logbook/summary.html', {'flight':flight,'depart':depart,'departmin':departmin,'arrive':arrive,'arrivemin':arrivemin,'rotationinfo':rotationinfo2,'minunder':minunder})
 
 # class EntrySummary(TemplateView):

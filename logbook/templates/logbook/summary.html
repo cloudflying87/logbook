@@ -6,7 +6,7 @@
     <h1>Summary View</h1>
     
     
-    <a href="../edit/{{flight.id}}"> {{flight.flightdate }} </a>  {{flight.aircraftId}} {{flight.departure}} - {{flight.arrival}} {{flight.flightnum}} {{flight.aircrafttype}}
+    <a href="../edit/{{flight.id}}"> DAL{{flight.flightnum}} {{flight.flightdate }} </a>  {{flight.departure}} - {{flight.arrival}} {{flight.aircraftId}}-{{flight.aircrafttype}}
     
     <br>{% if depart %}
         Departed at {{flight.deptimelocal|time:"H:i"}} which was {{departmin}} minute(s) early of {{flight.scheduleddeparttimelocal|time:"H:i"}} scheduled
