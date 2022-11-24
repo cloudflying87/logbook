@@ -275,7 +275,7 @@ def importingevents(request):
                         leg = item[2:]
                         legsplit = leg.split()
                         deadhead = True
-                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu)
+                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu[0])
                         reporttimeswitch = False
                     if item[:2] =="DL":
                         leg = item
