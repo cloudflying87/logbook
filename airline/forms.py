@@ -1,7 +1,7 @@
 from crispy_forms.helper import FormHelper
 from django import forms
 from tinymce.widgets import TinyMCE
-from airline.models import AirlineSchedule
+from airline.models import Rotations
 from crispy_forms.layout import Layout, Submit, Row, Column,Fieldset,Field
 
 class AirlineScheduleEntry(forms.ModelForm):
@@ -15,15 +15,15 @@ class AirlineScheduleEntry(forms.ModelForm):
             Fieldset(
                 'Schedule entry form',
                 'airline',
-                'rotationnumber',
+                'rotationid',
                 'rawdata',
             ),
             Submit('Submit', 'Save')
         )
 
     class Meta:
-        model = AirlineSchedule
-        fields = ('rawdata','airline','rotationnumber')
+        model = Rotations
+        fields = ('rawdata','airline','rotationid')
         widgets = {
             'rawdata':TinyMCE(attrs={'cols': 80, 'rows': 30})
 

@@ -28,6 +28,5 @@ class Users(models.Model):
     client_secret = models.CharField(blank=True,null=True, max_length=300)
     scopes = models.CharField(blank=True,null=True, max_length=300)
     calendarid = models.CharField(blank=True,null=True, max_length=300)
-
-    # def __str__(self):
-    #     return self
+    def __str__(self):  
+        return str(self.user_id)

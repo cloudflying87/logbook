@@ -23,6 +23,7 @@ from .forms import FlightTimeEntry
 from datetime import datetime, timedelta,date
 import time
 from user.models import Users
+from airline.models import Rotations
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from user.views import getuserid
@@ -58,7 +59,41 @@ class LogbookDisply(ListView):
         logbookdisplay = FlightTime.objects.all().filter(userid=getuserid()).exclude(scheduledflight=True).order_by('-flightdate','scheduleddeparttime')
         return logbookdisplay
 
+def fixtime(timetofix):
+    # Dealing with the :00 that are added with the form edit. Accepts a string. 
+    if len(timetofix) == 8:
+        fixedtime = timetofix[:5]
+    else:
+        fixedtime = timetofix
+
+    return fixedtime
+ 
+def addingtimeanddate(flightdate,starttime,utcoffset):
+    #date must datetime.date not str. this ensures the correct date based on the zulu time conversion. 
+    if datetime.strptime(starttime,'%H:%M').time() <= (datetime.strptime('23:59','%H:%M') - timedelta(hours=utcoffset)).time():
+        zuludate = flightdate+ timedelta(days=1)
+    else:
+        zuludate = flightdate
+    fixeddatetime = datetime.combine(zuludate,datetime.strptime(starttime,'%H:%M').time())
+    
+    return fixeddatetime
+
+def converttohoursandminutes(converttime):
+    #taking a decimal and converting it to an hours:min string
+    minsched = int((converttime - int(converttime))*60)
+    hoursmin = str(int(converttime))+':'+str(minsched)
+    return hoursmin
+
+def converttimetodecimal(converttime):
+    #takes a str and converts it to a decimal
+    timeobject = datetime.strptime(converttime,'%H:%M').time()
+    hours = timeobject.hour
+    minutes = timeobject.minute
+    convertedtime = hours + round((minutes/60),2)
+    return convertedtime
+
 def converttoUTC(localtime,timezone):
+    #takes a str, and a number for timezone
     #converting local times to utc returns a string
     
     timeobject = datetime.strptime(localtime, '%H:%M')
@@ -76,6 +111,7 @@ def converttoUTC(localtime,timezone):
     return timecorrectionstring
 
 def converttolocal(utctime,timezone):
+    #takes a time object
     #converting utc times to local times returns a string
     
     timeobject = datetime.strptime(utctime, '%H:%M')
@@ -179,23 +215,7 @@ def checkdaynight(night,total,landing,landingtime):
             else:
                 return nighttime,daytime
 
-def fixtime(timetofix):
-    # Dealing with the :00 that are added with the form edit. 
-    if len(timetofix) == 8:
-        fixedtime = timetofix[:5]
-    else:
-        fixedtime = timetofix
 
-    return fixedtime
- 
-def addingtimeanddate(flightdate,starttime,utcoffset):
-    if datetime.strptime(starttime,'%H:%M').time() <= (datetime.strptime('23:59','%H:%M') - timedelta(hours=utcoffset)).time():
-        zuludate = flightdate+ timedelta(days=1)
-    else:
-        zuludate = flightdate
-    fixeddatetime = datetime.combine(zuludate,datetime.strptime(starttime,'%H:%M').time())
-    
-    return fixeddatetime
 
 def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunrisen,arrsunsetp,arrsunrise,arrsunset,arrsunrisen,landing):
     
@@ -266,57 +286,88 @@ def nighttime(totaltime,deptime,arrtime,depsunsetp,depsunrise,depsunset,depsunri
         
         return check
 
-def calculateearlylate(scheduled,actual):
+def calculateearlylate(scheduled,actual,operation):
     #used calculate the difference between scheduled time
-    #and actual time
-
-    if actual < scheduled:
-        early = True
-        earlytime = datetime.combine(date.min,scheduled) - datetime.combine(date.min,actual)
-        
-    else: 
-        early = False
-        earlytime = datetime.combine(date.min,actual) - datetime.combine(date.min,scheduled)
-
-    seconds = earlytime.seconds
-    earlymin = (seconds % 3600) // 60
+    #and actual time and create the correct message
+    stringtime = str(scheduled.hour)+":"+str(scheduled.minute)
     
-    return (early,earlymin)
+    if actual == scheduled:
+        earlymessage = "Departed on time"
+        
+        
+    elif actual < scheduled: 
+        earlytime = datetime.combine(date.min,scheduled) - datetime.combine(date.min,actual)
+        seconds = earlytime.seconds
+        earlymin = (seconds % 3600) // 60
+        if earlymin == 1:
+            earlymessage = f'{operation} 1 minute ahead of {stringtime}'
+        else:
+            earlymessage = f'{operation} {earlymin} minutes ahead of {stringtime}'
+        
+    elif actual > scheduled:
+        earlytime = datetime.combine(date.min,actual) - datetime.combine(date.min,scheduled)
+        seconds = earlytime.seconds
+        earlymin = (seconds % 3600) // 60
+        if earlymin == 1:
+            earlymessage = f'{operation} 1 minute after {stringtime}'
+        else:
+            earlymessage = f'{operation} {earlymin} minutes after {stringtime}'
+    
+    
+    return (earlymessage)
 
 def summary(request,id):
     #creating a summary page after a flight is logged. 
     userid = getuserid()
 
     flight = FlightTime.objects.get(id=id)
+    if flight.deptime == None or flight.arrtime == None:
+        return redirect('deltaschedule')
     
-    departuretimes = calculateearlylate(flight.scheduleddeparttime,flight.deptime)
     
-    depart = departuretimes[0]
-    departmin = departuretimes[1]
+    departuretimes = calculateearlylate(flight.scheduleddeparttime,flight.deptime,'Departed')
+    
+    departmessage = departuretimes
+    
 
-    arrivaltimes = calculateearlylate(flight.scheduledarrivaltimelocal,flight.arrtimelocal)
+    arrivaltimes = calculateearlylate(flight.scheduledarrivaltimelocal,flight.arrtimelocal,'Arrived')
     
-    arrive = arrivaltimes[0]
-    arrivemin = arrivaltimes[1]
+    arrivemessage = arrivaltimes
+    schedhoursmin = converttohoursandminutes(flight.scheduledblock)
+    actualhoursmin = converttohoursandminutes(flight.total)
 
     if flight.minutesunder:
         minunder = int((flight.scheduledblock - flight.total)*60)
+        if minunder == 1:
+            blockmessage = f'{actualhoursmin} was 1 minute under {schedhoursmin} block'
+        else:
+            blockmessage = f'{actualhoursmin} was {minunder} minutes under {schedhoursmin} block'
     else:
         minunder = int((flight.total - flight.scheduledblock)*60)
+        if minunder == 1:
+            blockmessage = f'{actualhoursmin} was 1 minute over {schedhoursmin} block'
+        else:
+            blockmessage = f'{actualhoursmin} was {minunder} minutes over {schedhoursmin} block'
     rotationinfo = FlightTime.objects.filter(userid=userid,rotationid=flight.rotationid)
+    mainrotationinfo = Rotations.objects.get(userid=userid,rotationid=flight.rotationid)
+    
     actualblock = 0
     scheduledblock = 0
+    passengercount = 0
+    distancecount = 0
     for leg in rotationinfo:
-
         if leg.total != None:
             actualblock = actualblock + leg.total
+            passengercount =+ leg.passengercount
+            distancecount =+ leg.distance
         else:
             actualblock = actualblock + leg.scheduledblock
         
         scheduledblock = scheduledblock+leg.scheduledblock
+        
 
     rotationinfo2 = (actualblock,scheduledblock)    
-    return render(request,'logbook/summary.html', {'flight':flight,'depart':depart,'departmin':departmin,'arrive':arrive,'arrivemin':arrivemin,'rotationinfo':rotationinfo2,'minunder':minunder})
+    return render(request,'logbook/summary.html', {'flight':flight,'departmessage':departmessage,'arrivemessage':arrivemessage,'actualblock':actualblock,'blockmessage':blockmessage,'mainrotationinfo':mainrotationinfo,'passengercount':passengercount,'distance':distancecount})
 
 # class EntrySummary(TemplateView):
 #     template_name = 'logbook/summary.html'

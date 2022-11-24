@@ -63,7 +63,7 @@ class FlightTime(models.Model):
     rotationid = models.CharField(max_length=50,blank=True,null=True)
     scheduledflight = models.BooleanField(blank=True,null=True)
     deadheadflight = models.BooleanField(blank=True,null=True)
-    aircrafttype = models.ForeignKey(AircraftModel,default ='B737-800',on_delete=models.SET_DEFAULT)
+    aircrafttype = models.ForeignKey(AircraftModel,default ='B737-900',on_delete=models.SET_DEFAULT)
     flighttime = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
     distance = models.IntegerField(blank=True,null=True)
     scheduleddeparttimelocal = models.TimeField(blank=True,null=True)
@@ -80,6 +80,7 @@ class FlightTime(models.Model):
     domestic = models.BooleanField(blank=True,null=True)
     international = models.BooleanField(blank=True,null=True)
     paycode = models.CharField(max_length=50,blank=True,null=True)
+    startdate = models.DateTimeField(default=utils.timezone.now)
 
     def __str__(self):
         return '{} {} {} {} {}'.format(self.flightdate,self.departure,self.arrival,self.aircraftId,self.personalcomments)

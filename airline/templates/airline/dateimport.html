@@ -1,0 +1,15 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Schedule Import</h1>
+<div class = 'mainlogbook'>
+    <form method=POST action="{% url 'export' %}" class="form-main">
+        {% csrf_token %}
+        {{form}}
+    </form>
+</div>
+
+
+{% endblock%}

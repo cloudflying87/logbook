@@ -13,7 +13,7 @@ from django_currentuser.middleware import (
     get_current_user)
 from user.models import Users
 from django.contrib.auth.models import User
-from logbook.views import calculatetimes, converttoUTC
+from logbook.views import calculatetimes, converttoUTC,addingtimeanddate, converttimetodecimal
 from .forms import AirlineScheduleEntry
 import datetime
 from datetime import datetime,timedelta
@@ -21,7 +21,8 @@ import time
 import airport
 from airport.views import gettingairport
 from django.views.generic import TemplateView,View,ListView, FormView
-from airline.models import AirlineSchedule
+from airline.models import Rotations
+from reports.forms import DateSelector
 import datetime
 import os.path
 import re
@@ -37,6 +38,7 @@ from user.views import getuserid
 import requests
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from logbook.views import converttoUTC,calculatetimes
 
 state = ''
 
@@ -164,10 +166,48 @@ def workdeltschedulegoogle(request):
             break
     return render(request, 'airline/choosecal.html', {'added': added})
 
+def workingisotime(object):
+    #taking the ISO time object from google and converting it to python datetime object in zulutime
+    objectsplit = object.split('T')
+    if objectsplit[1][-1] == 'Z':
+        datetodatetime = datetime.datetime.strptime(objectsplit[0],'%Y-%m-%d')
+        convertedtime = objectsplit[1][:5]
+        dateandtimeUTC = datetime.datetime.strptime(objectsplit[0]+' '+convertedtime,'%Y-%m-%d %H:%M')
+    else:  
+        #using the - sign to split, but that is actually indicating the gmt offset. works for me, but wouldnt work for plus gmt
+        time = objectsplit[1][:5]
+        timezone = objectsplit[1][8:11]
+        convertedtime = converttoUTC(time,int(timezone))
+        datetodatetime = datetime.datetime.strptime(objectsplit[0],'%Y-%m-%d')
+        dateandtimeUTC = addingtimeanddate(datetodatetime,convertedtime,int(timezone))
+    
+    return [dateandtimeUTC,datetodatetime]
+    
+# class SelectDate(FormView):
+#     template_name = 'airline/dateimport.html'
+#     form_class = DateSelector
+#     success_url = '/reports'
+#     def get(self, request, *args, **kwargs):
+#         pagetitle = "Export Reports"
+#         return self.render_to_response({"title":pagetitle})
+
+#     def post(self, request, *args, **kwargs):
+#         userid=getuserid()
+#         if 'startall' in request.POST:
+#             startdate = True
+#         else:
+#             startdate = request.POST['startdate']
+#         if 'endall' in request.POST:
+#             enddate = True
+#         else:
+#             enddate = request.POST['enddate']
+#         return 
+  
+
 def importingevents(request):
         
     credentials = getcredentialsfromdb()
-        
+    
     service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials[1])
     # here is retreving calendar events and then working them correctly to get everything in the database. 
     now = datetime.datetime.today().replace(day=1).isoformat() +'Z'
@@ -178,24 +218,53 @@ def importingevents(request):
     added = []
     notadded = []
     while True:
+        user_id=getuserid()
+        preferences = Users.objects.get(user_id=user_id)
+        
+        airline = preferences.airline
         events = service.events().list(calendarId=calendarId, pageToken=page_token,timeMin=now).execute()
+        
         for event in events['items']:
+            #getting all the rotation information and saving it in the 
+            #rotation table for pay calculations
+            rotation = Rotations()
+            tripcreated = workingisotime(event['created'])
             summarysplit = event['summary'].split()
+            description = event['description']
+            descriptionsplit = description.split("\n")
             tripnum = summarysplit[0]
             tripstarttime = event['start']['dateTime']
             tripyear = tripstarttime[:4]
             tripendtime = event['end']['dateTime']
+            overnights=[]
             if len(summarysplit) > 2:
-                overnights = summarysplit[1:-1]
-                rotationsummary = tripnum,overnights,tripstarttime,tripendtime
+                overnightraw = summarysplit[1:-1]
+                for summaryitem in overnightraw:
+                    summaryitem = summaryitem.replace(',','')
+                    overnights.append(summaryitem)
+                #converting to correct datetime in zulu for start and endtimes
+                tripstartzulu = workingisotime(tripstarttime)
+                tripendzulu = workingisotime(tripendtime)
+                tafb = round(((((tripendzulu[0]-tripstartzulu[0]).total_seconds())/60)/60),2)
+                #does not include the 2am cutout. 
+                tripdays = ((tripendzulu[1]-tripstartzulu[1]).days)+1
+                rotation.userid = user_id
+                rotation.rotationid = str(tripnum)
+                rotation.rotationstart = tripstartzulu[0]
+                rotation.rotationend = tripendzulu[0]
+                rotation.googleimportdate = tripcreated[0]
+                rotation.scheduledtafb = tafb
+                rotation.days = tripdays
+                rotation.rawdata = description
+                rotation.overnights = str(overnights)
+                rotation.logbookimportdate = datetime.datetime.now()
+                rotation.airline = airline
+                rotationsummary = type(user_id),type(tripnum),type(str(overnights)),tripstartzulu,tripendzulu,tripcreated,tafb,tripdays
             else:
                 rotationsummary = tripnum
-            monthrotations.append(rotationsummary)
-            description = event['description']
-            descriptionsplit = description.split("\n")
-
-            for count,item in enumerate(descriptionsplit):
-                
+            # print(rotationsummary)
+            
+            for item in descriptionsplit:
                 if item !='':
                     if item[0:3] == 'Rpt':
                         reporttimeraw = item[5:9]
@@ -206,14 +275,27 @@ def importingevents(request):
                         leg = item[2:]
                         legsplit = leg.split()
                         deadhead = True
-                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead)
+                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu)
                         reporttimeswitch = False
                     if item[:2] =="DL":
                         leg = item
                         legsplit = leg.split()
                         deadhead = False
-                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead)
+                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu)
                         reporttimeswitch = False
+                    if 'TL' and 'BL' and 'CR' in item:
+                        timesplit = item.split()
+                        rotation.rotationpay = converttimetodecimal(timesplit[0][:5])
+                        rotation.rotationblock = converttimetodecimal(timesplit[1][:5])
+                        rotation.rotationcredit = converttimetodecimal(timesplit[2][:5])
+                    if item[:4] =="This":
+                        eachword = item.split()
+                        micrewexport = datetime.datetime.strptime(str(tripcreated[0].year)+'-'+eachword[4], '%Y-%d%b').date()
+                        zulumicrew = converttoUTC(eachword[6],int(eachword[8][:3]))
+                        combinedmicrew = addingtimeanddate(micrewexport,zulumicrew,int(eachword[8][:3]))
+                        
+                        rotation.micrewexportdate = combinedmicrew
+            rotation.save()
                          
         page_token = events.get('nextPageToken')
         if not page_token:
@@ -221,14 +303,14 @@ def importingevents(request):
     
     return render(request, 'airline/masterschedule.html', {'added': added,'notadded':notadded}) 
 
-def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhead):
+def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhead,tripstart):
     #getting all of the retreived calendar information in the correct format and then saving it to the database. Done leg by leg. 
     # this currently works with google and the way micrew exports to google calendar via apple calendar
 
     #this will not have the correct date for a trip that goes across new years day. But I am getting the year from the start of the trip
     # This has problems with the day that Daylight savings switches
+    userid = getuserid()
     flightdate = (datetime.datetime.strptime(tripyear+legdate,'%Y%d%b')).date()
-
     flightdatetime = (datetime.datetime.strptime(tripyear+legdate+reporttime,'%Y%d%b%H:%M'))
 
     unixdate = time.mktime(flightdatetime.timetuple())
@@ -247,7 +329,7 @@ def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhe
     else: 
         international = False
         domestic = True
-    # #correcting for plus or minus GMT
+    #correcting for plus or minus GMT
     departuretime = converttoUTC(times[0],departairportinfo['gmt_offset_single'])
 
     # keeping the correct timezone for the reporttime. 
@@ -260,17 +342,17 @@ def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhe
     
 
     # #this will need to be updated by userpreferences
-    preferences = Users.objects.filter(user_id=getuserid()).values()
-    decimal=preferences[0]['decimal']
-    decimalplaces = preferences[0]['decimalplaces']
+    preferences = Users.objects.get(user_id=userid)
+    decimal=preferences.decimal
+    decimalplaces = preferences.decimalplaces
     blocktime = calculatetimes(departuretime,arrivaltime,decimalplaces,decimal)
 
     leg = [flightdate.strftime("%m/%d/%Y"),flightnumber,departairport,arrivalairport,departuretime,arrivaltime,blocktime,rotationid]
-
-    if not FlightTime.objects.filter(userid=getuserid(),flightdate=flightdate,flightnum=flightnumber,departure=departairport,arrival=arrivalairport,scheduleddeparttime=departuretime).exists():
+    #saving to the database
+    if not FlightTime.objects.filter(userid=userid,flightdate=flightdate,flightnum=flightnumber,departure=departairport,arrival=arrivalairport,scheduleddeparttime=departuretime).exists():
         
         flighttime = FlightTime()
-        flighttime.userid = getuserid()
+        flighttime.userid = userid
         flighttime.aircraftId = NewPlaneMaster.objects.get(nnumber = 'N802DN')
         flighttime.flightdate = flightdate
         flighttime.flightnum = flightnumber
@@ -288,8 +370,9 @@ def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhe
         flighttime.international = international
         flighttime.domestic = domestic
         flighttime.scheduledflight = True
+        flighttime.startdate = tripstart
         flighttime.flightcreated = datetime.datetime.now()
-        flighttime.save()
+        # flighttime.save()
 
         added.append(leg)
     else:

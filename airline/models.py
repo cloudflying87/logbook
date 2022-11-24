@@ -12,17 +12,6 @@ class AirlineList(models.Model):
     airlinesize = models.IntegerField()
     def __str__(self):
         return self.airlinecode
-
-class AirlineSchedule(models.Model):
-    userid= models.IntegerField(default = 1)
-    importdate = models.DateField(default=utils.timezone.now)
-    rotationnumber = models.CharField(max_length=4,null=True,blank=True)
-    airline = models.ForeignKey(AirlineList,default ='', max_length=100,on_delete=models.SET_DEFAULT)
-    rawdata = tinymce_models.HTMLField()
-    
-    def __str__(self):
-        return self.rotationnumber
-
 class PayTables(models.Model):
     effectivedate = models.DateField(default=utils.timezone.now)
     aircraft = models.CharField(max_length=30,null=True,blank=True)
@@ -55,9 +44,19 @@ class Rotations(models.Model):
     rotationstart = models.DateTimeField(blank=True,null=True)
     rotationend = models.DateTimeField(blank=True,null=True)
     overnights = models.CharField(max_length=50,blank=True,null=True)
+    days = models.IntegerField(default = 1)
+    rotationpay = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
+    rotationblock = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
+    rotationcredit = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
+    scheduledtafb = models.DecimalField(max_digits=5, blank=True, decimal_places=2,null=True)
     rotationnotes = models.CharField(max_length=300,blank=True,null=True)
+    micrewexportdate = models.DateTimeField(blank=True, null=True)
+    googleimportdate = models.DateTimeField(blank=True, null=True)
+    logbookimportdate = models.DateTimeField(default=utils.timezone.now)
+    airline = models.ForeignKey(AirlineList,default ='', max_length=100,on_delete=models.SET_DEFAULT,blank=True, null=True)
+    rawdata = tinymce_models.HTMLField(blank=True, null=True)
     def __str__(self):
-        return self.rotationid,self.rotationstart
+        return str(self.rotationid),str(self.rotationstart)
 
 class BidPeriod(models.Model):
     calendarmonth = models.CharField(max_length=50,blank=True,null=True)
