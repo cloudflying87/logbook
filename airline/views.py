@@ -281,7 +281,7 @@ def importingevents(request):
                         leg = item
                         legsplit = leg.split()
                         deadhead = False
-                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu)
+                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu[0])
                         reporttimeswitch = False
                     if 'TL' and 'BL' and 'CR' in item:
                         timesplit = item.split()
