@@ -350,7 +350,7 @@ def summary(request,id):
             blockmessage = f'{actualhoursmin} was {minunder} minutes over {schedhoursmin} block'
     rotationinfo = FlightTime.objects.filter(userid=userid,rotationid=flight.rotationid)
     mainrotationinfo = Rotations.objects.get(userid=userid,rotationid=flight.rotationid)
-    
+    print(mainrotationinfo.rotationpay)
     actualblock = 0
     scheduledblock = 0
     passengercount = 0

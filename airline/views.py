@@ -372,7 +372,7 @@ def fixingleg(tripyear,legdate,reporttime,leg,rotationid,reporttimeswitch,deadhe
         flighttime.scheduledflight = True
         flighttime.startdate = tripstart
         flighttime.flightcreated = datetime.datetime.now()
-        # flighttime.save()
+        flighttime.save()
 
         added.append(leg)
     else:
