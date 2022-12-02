@@ -3,12 +3,12 @@
 
 {% block content %}
 {% include 'logbook/navbar.html' %} 
-
+<p>Here you can import monthly bid awards for the ALV or csv to add to the flighttime table in the export form</p>
   <form method="post" enctype="multipart/form-data" action="{% url 'upload' %}">
     {% csrf_token %}
     <input type="file" name="myfile">
     <button type="submit">Upload</button>
   </form>
-
+{{nofile}}
   
 {% endblock %}

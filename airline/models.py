@@ -53,7 +53,7 @@ class Rotations(models.Model):
     micrewexportdate = models.DateTimeField(blank=True, null=True)
     googleimportdate = models.DateTimeField(blank=True, null=True)
     logbookimportdate = models.DateTimeField(default=utils.timezone.now)
-    airline = models.ForeignKey(AirlineList,default ='', max_length=100,on_delete=models.SET_DEFAULT,blank=True, null=True)
+    airline = models.ForeignKey(AirlineList,default ='DAL', max_length=100,on_delete=models.SET_DEFAULT,blank=True, null=True)
     rawdata = tinymce_models.HTMLField(blank=True, null=True)
     def __str__(self):
         return str(self.rotationid),str(self.rotationstart)
@@ -62,7 +62,17 @@ class BidPeriod(models.Model):
     calendarmonth = models.CharField(max_length=50,blank=True,null=True)
     bidperiodstart = models.DateField(blank=True,null=True)
     bidperiodend = models.DateField(blank=True,null=True)
-    alv = models.IntegerField(blank=True,null=True, default = 72)
+    bidperioddays = models.IntegerField(blank=True,null=True)
+    alv = models.DecimalField(max_digits=5,blank=True,null=True, default = 72,decimal_places=2)
+    category = models.CharField(max_length=50,blank=True,null=True)
+    alvrange = models.CharField(max_length=50,blank=True,null=True)
+    resguarentee = models.CharField(max_length=50,blank=True,null=True)
+    reserverules = models.CharField(max_length=50,blank=True,null=True)
+    extraday = models.BooleanField(blank=True,null=True,default=False)
+    airline = models.ForeignKey(AirlineList,default ='', max_length=100,on_delete=models.SET_DEFAULT,blank=True, null=True)
+    rll = models.IntegerField(blank=True,null=True)
+
+    
     def __str__(self):
         return self.calendarmonth,self.bidperiodstart,self.bidperiodend,self.alv
 

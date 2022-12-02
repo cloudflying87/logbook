@@ -1,4 +1,6 @@
 from PyPDF2 import PdfReader
+import csv
+from decimal import Decimal
 from cmd import PROMPT
 import sys
 from calendar import month
@@ -8,12 +10,13 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from airport.models import Airport
 from logbook.models import FlightTime
-from aircraft.models import NewPlaneMaster
+from aircraft.models import NewPlaneMaster,AircraftModel
 from django_currentuser.middleware import (
     get_current_user)
 from user.models import Users
 from django.contrib.auth.models import User
-from logbook.views import calculatetimes, converttoUTC,addingtimeanddate, converttimetodecimal
+from logbook.views import calculatetimes, converttoUTC,addingtimeanddate, converttimetodecimal,gettingairportinfo,converttolocal,nighttime,checkdaynight,getextrasuntimes
+from geopy.distance import great_circle
 from .forms import AirlineScheduleEntry
 import datetime
 from datetime import datetime,timedelta
@@ -21,7 +24,8 @@ import time
 import airport
 from airport.views import gettingairport
 from django.views.generic import TemplateView,View,ListView, FormView
-from airline.models import Rotations
+from airline.models import Rotations,BidPeriod
+from user.models import Users
 from reports.forms import DateSelector
 import datetime
 import os.path
@@ -173,7 +177,7 @@ def workingisotime(object):
         datetodatetime = datetime.datetime.strptime(objectsplit[0],'%Y-%m-%d')
         convertedtime = objectsplit[1][:5]
         dateandtimeUTC = datetime.datetime.strptime(objectsplit[0]+' '+convertedtime,'%Y-%m-%d %H:%M')
-    else:  
+    elif len(objectsplit) == 2:  
         #using the - sign to split, but that is actually indicating the gmt offset. works for me, but wouldnt work for plus gmt
         time = objectsplit[1][:5]
         timezone = objectsplit[1][8:11]
@@ -210,7 +214,8 @@ def importingevents(request):
     
     service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials[1])
     # here is retreving calendar events and then working them correctly to get everything in the database. 
-    now = datetime.datetime.today().replace(day=1).isoformat() +'Z'
+    # now = datetime.datetime.today().replace(day=1).isoformat() +'Z'
+    now = '2018-11-01T05:10:29.398711Z'
     calendarId=credentials[0]
     page_token = None
     monthrotations = []
@@ -220,17 +225,21 @@ def importingevents(request):
     while True:
         user_id=getuserid()
         preferences = Users.objects.get(user_id=user_id)
-        
         airline = preferences.airline
-        events = service.events().list(calendarId=calendarId, pageToken=page_token,timeMin=now).execute()
-        
+        events = service.events().list(calendarId=calendarId, pageToken=page_token,timeMin=now,maxResults=10).execute()
+        # for event in events['items']:
+        #     print(event['summary'],event['start'])
         for event in events['items']:
             #getting all the rotation information and saving it in the 
             #rotation table for pay calculations
             rotation = Rotations()
+            try:
+                description = event['description']
+            except KeyError:
+                continue
             tripcreated = workingisotime(event['created'])
             summarysplit = event['summary'].split()
-            description = event['description']
+            
             descriptionsplit = description.split("\n")
             tripnum = summarysplit[0]
             tripstarttime = event['start']['dateTime']
@@ -259,9 +268,14 @@ def importingevents(request):
                 rotation.overnights = str(overnights)
                 rotation.logbookimportdate = datetime.datetime.now()
                 rotation.airline = airline
-                rotationsummary = type(user_id),type(tripnum),type(str(overnights)),tripstartzulu,tripendzulu,tripcreated,tafb,tripdays
             else:
-                rotationsummary = tripnum
+                rotation.userid = user_id
+                rotation.rotationstart = tripstartzulu[0]
+                rotation.rotationend = tripendzulu[0]
+                rotation.rotationid = str(tripnum)
+                rotation.googleimportdate = tripcreated[0]
+                rotation.logbookimportdate = datetime.datetime.now()
+                rotation.airline = airline
             # print(rotationsummary)
             
             for item in descriptionsplit:
@@ -271,12 +285,19 @@ def importingevents(request):
                         reporttime = reporttimeraw[:2]+':'+reporttimeraw[2:]
                         reporttimeswitch = True
                         flightdate = (item[-5:])
+                    if item[:3] =="DD ":
+                        leg = item[3:]
+                        legsplit = leg.split()
+                        deadhead = True
+                        fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu[0])
+                        reporttimeswitch = False
                     if item[:2] =="D " or item[:2] =="O ":
                         leg = item[2:]
                         legsplit = leg.split()
                         deadhead = True
                         fixingleg(tripyear,flightdate,reporttime,legsplit,tripnum,reporttimeswitch,deadhead,tripstartzulu[0])
                         reporttimeswitch = False
+
                     if item[:2] =="DL":
                         leg = item
                         legsplit = leg.split()
@@ -285,17 +306,29 @@ def importingevents(request):
                         reporttimeswitch = False
                     if 'TL' and 'BL' and 'CR' in item:
                         timesplit = item.split()
-                        rotation.rotationpay = converttimetodecimal(timesplit[0][:5])
-                        rotation.rotationblock = converttimetodecimal(timesplit[1][:5])
-                        rotation.rotationcredit = converttimetodecimal(timesplit[2][:5])
+                        try:
+                            if re.search('[0-9][0-9]:[0-9][0-9]',timesplit[0][:5]):
+                                rotation.rotationpay = converttimetodecimal(timesplit[0][:5])
+                        except IndexError:
+                            rotation.rotationpay = 0
+                        try:
+                            if re.search('[0-9][0-9]:[0-9][0-9]',timesplit[1][:5]):
+                                rotation.rotationblock = converttimetodecimal(timesplit[1][:5])
+                        except IndexError:
+                            rotation.rotationblock = 0
+                        try:
+                            if re.search('[0-9][0-9]:[0-9][0-9]',timesplit[2][:5]):
+                                rotation.rotationcredit = converttimetodecimal(timesplit[2][:5])
+                        except IndexError:
+                            rotation.rotationcredit = 0
                     if item[:4] =="This":
                         eachword = item.split()
                         micrewexport = datetime.datetime.strptime(str(tripcreated[0].year)+'-'+eachword[4], '%Y-%d%b').date()
                         zulumicrew = converttoUTC(eachword[6],int(eachword[8][:3]))
                         combinedmicrew = addingtimeanddate(micrewexport,zulumicrew,int(eachword[8][:3]))
-                        
                         rotation.micrewexportdate = combinedmicrew
-            rotation.save()
+            if not Rotations.objects.filter(userid=user_id,rotationid=str(tripnum),rotationstart=tripstartzulu[0],rotationend=tripendzulu[0]).exists():
+                rotation.save()
                          
         page_token = events.get('nextPageToken')
         if not page_token:
@@ -386,45 +419,326 @@ class DeltaScheduleEntry(ListView):
     def get_queryset(self, *args, **kwargs):
         todaydate = datetime.datetime.now()
         scheduledflightdatecutoff = todaydate - timedelta(days=3)
-        # print(scheduledflightdatecutoff)
         logbookdisplay = FlightTime.objects.all().filter(userid=getuserid(),scheduledflight=True,flightdate__gt=scheduledflightdatecutoff).order_by('flightdate','scheduleddeparttimelocal')
         return logbookdisplay
 
 class SimpleUpload(TemplateView):
+    #used to upload pdf or csv files
     template_name = 'airline/upload.html'
 
     def post(self,form):
-        myfile = self.request.FILES['myfile']
-        reader = PdfReader(myfile)
-        number_of_pages = len(reader.pages)
-        page = reader.pages[4]
-        text = page.extract_text()
-        print(number_of_pages,text)
-        fs = FileSystemStorage()
-        filename = fs.save(myfile.name, myfile)
-        uploaded_file_url = fs.url(filename)
-        # return render(request, 'core/simple_upload.html', {
-        #     'uploaded_file_url': uploaded_file_url
-        # })
-
-def simple_upload(request):
-    if request.method == 'POST' and request.FILES['myfile']:
-        myfile = request.FILES['myfile']
-        
-
-        reader = PdfReader(myfile)
-        number_of_pages = len(reader.pages)
-        for pages in reader:
-            page = reader.pages[pages]
-            text = page.extract_text()
-            print(text)
-        fs = FileSystemStorage('/fixtures/BidPackage')
-        filename = fs.save(myfile.name, myfile)
-        uploaded_file_url = fs.url(filename)
-        return render(request, 'airline/upload.html', {
-            'uploaded_file_url': uploaded_file_url
+        nofile = "Test"
+        if 'myfile' not in self.request.FILES:
+            nofile = "No File Selected"
+            return render(self.request, 'airline/upload.html', {
+            'nofile':nofile
         })
-    return render(request, 'airline/upload.html')
+        myfile = self.request.FILES['myfile']
+        filetype = myfile.name.split('.')
+        perferences = Users.objects.get(user_id=getuserid())
+        if filetype[1] =='csv':
+            fs = FileSystemStorage('savedfiles')
+            filename = fs.save(myfile.name, myfile)
+            with open('./savedfiles/'+filename,'r') as read_file:
+                perferences = Users.objects.get(user_id=getuserid())
+                logbook = csv.reader(read_file)
+                next(logbook)
+                for item in logbook:
+                    deptimevalid = False
+                    offtimevalid = False
+                    ontimevalid = False
+                    arrtimevalid = False
+                    newtotal = False
+                    flight=FlightTime()
+                    if len(item) < 75:
+                        continue
+                    # flight.id =item[0]
+                    flight.userid =item[1]
+                    if not item[2] == '':
+                        flight.flightdate =item[2]
+                        flightdate = datetime.datetime.strptime(item[2],'%Y-%m-%d')
+                        unixdate = time.mktime(flightdate.timetuple())  
+                    aircraft_type = NewPlaneMaster.objects.get(nnumber=item[3])
+                    flight.aircraftId = aircraft_type
+                    if not item[4] == '':
+                        flight.departure = item[4]
+                        depairportinfo = gettingairportinfo(item[4],unixdate,flightdate)
+                    flight.route = item[5]
+                    if not item[6] == '':
+                        flight.arrival = item[6]
+                        arrairportinfo = gettingairportinfo(item[6],unixdate,flightdate)
+                    
+                    flight.flightnum = item[7]
+                    if not item[8] == '':
+                        flight.deptime  = item[8]
+                        if item[8] != '00:00:00':
+                            deptime = item[8]
+                            deptimevalid = True
+                    if not item[9] == '':
+                        flight.offtime = item[9]
+                        if item[9] != '00:00:00':
+                            offtime = item[9]
+                            offtimevalid = True
+                    if not item[10] == '':
+                        flight.ontime = item[10]
+                        if item[10] != '00:00:00':
+                            ontime = item[10]
+                            ontimevalid = True
+                    if not item[11] == '':    
+                        flight.arrtime = item[11]
+                        if item[11] != '00:00:00':
+                            arrtime = item[11]
+                            arrtimevalid = True
+                    if deptimevalid and arrtimevalid and item[26] == '':
+                        print('total')
+                        flight.total = calculatetimes(deptime,arrtime,perferences.decimalplaces,perferences.decimal)
+                        newtotal = True
+                    elif item[26] != '':
+                        flight.total = item[26]
+                    if offtimevalid and ontimevalid and item[52] == '':
+                        flight.flighttime = calculatetimes(offtime,ontime,perferences.decimalplaces,perferences.decimal)
+                    elif item[52] != '':
+                        flight.flighttime = item[52]
+                    
+                    if perferences.cx and item[4] != '' and item[6] !='' and item[53] == '':
+                        distance = (great_circle((depairportinfo[0]['airport']['lat'],depairportinfo[0]['airport']['long']),(arrairportinfo[0]['airport']['lat'],arrairportinfo[0]['airport']['long'])).nm)
+                        flight.distance = distance
+                        if distance > 50 and item[24] == '':
+                            flight.crosscountry = flight.total
+                        elif not item[24] == '':
+                            flight.crosscountry = item[24]
+                    elif item[53] != '':
+                        flight.distance = item[53]
+                    
+
+                    if not item[12] == '':
+                        flight.landings = item[12]
+                    else:
+                        flight.landings = 0
+                    if not item[13] == '':
+                        flight.imc = item[13]
+                    if not item[14] == '':
+                        flight.hood = item[14]
+                    if not item[15] == '':
+                        flight.iap = item[15]
+                    flight.typeofapproach = item[16]
+                    flight.descriptionofapproach = item[17]
+                    if not item[18] == '':
+                        flight.holdnumber = item[18]
+                    if not item[19] == '':
+                        flight.holdboolean = item[19]
+                    if newtotal and perferences.pic and item[20] == '':
+                        flight.pic = flight.total
+                    elif item[20] != '':
+                        flight.pic = item[20]
+                    
+                    if newtotal and perferences.sic and item[21] == '':
+                        flight.sic = flight.total
+                    elif item[21] != '':
+                        flight.sic = item[21]
+                    
+                    if newtotal and perferences.cfi and item[22] == '':
+                        flight.cfi = flight.total
+                    elif item[22] != '':
+                        flight.cfi = item[22]
+
+                    if newtotal and perferences.dual and item[23] == '':
+                        flight.dual = flight.total
+                    elif item[23] != '':
+                        flight.dual = item[23]
+
+                    if newtotal and perferences.solo and item[25] == '':
+                        flight.solo = flight.total
+                    elif item[25] != '':
+                        flight.solo = item[25]
+                    
+                    if item[27] == '' and item[29] == '' and deptimevalid and arrtimevalid and item[4] != '' and item[6] != '':
+                        #getting the times all set correctly to work on the night time calculations
+                        departuretime = addingtimeanddate(flightdate,deptime,depairportinfo[0]['gmt_offset_single'])
+                
+                        #if departure date gets one added to it then automatically add it to the arrival date, else run the formula on arrival date separately
+                        
+                        if departuretime>(flightdate+timedelta(days=1)) :
+                            arrivaltime = datetime.datetime.combine((flightdate + timedelta(days=1)),datetime.datetime.strptime(arrtime,'%H:%M').time())
+                        else:
+                            arrivaltime = addingtimeanddate(flightdate,arrtime,arrairportinfo[0]['gmt_offset_single'])
+                        
+                        #getting the previous sunset and the nextday sunrise, so I will know the times for both nights
+                        extrasuntimesdep = getextrasuntimes(item[4],flightdate)
+                        extrasuntimesarr = getextrasuntimes(item[6],flightdate)
+                        
+                        nightcalc = nighttime(flight.total,departuretime,arrivaltime,extrasuntimesdep[0],depairportinfo[1]['sunriseUTC'],depairportinfo[1]['sunsetUTC'],extrasuntimesdep[1],extrasuntimesarr[0],arrairportinfo[1]['sunriseUTC'],arrairportinfo[1]['sunsetUTC'],extrasuntimesarr[1],int(flight.landings))
+                
+                        flight.night = nightcalc[0]
+                        flight.day = nightcalc[1]
+                        if int(flight.landings) > 0:
+                            flight.nightlandings = nightcalc[2]
+                            flight.daylandings = nightcalc[3]
+
+                    if not item[27] == '':
+                        flight.day = item[27]
+                    if not item[28] == '':
+                        flight.daylandings = item[28]
+                    if not item[29] == '':
+                        flight.night = item[29]
+                    if not item[30] == '':
+                        flight.nightlandings = item[30]
+                    flight.printcomments = item[31]
+                    flight.personalcomments = item[32]
+                    if not item[33] == '':
+                        flight.ftd = item[33]
+                    if not item[34] == '':    
+                        flight.ftdimc = item[34]
+                    if not item[35] == '':
+                        flight.sim = item[35]
+                    if not item[36] == '':
+                        flight.simimc = item[36]
+                    if not item[37] == '':
+                        flight.pcatd = item[37]
+                    if not item[38] == '':
+                        flight.pcimc = item[38]
+                    flight.instructor = item[39]
+                    if item[40] != '':
+                        flight.instructorid = item[40]
+                    flight.student = item[41]
+                    if item[42] !='':
+                        flight.studentid = item[42]
+                    flight.captain = item[43]
+                    flight.firstofficer = item[44]
+                    flight.flightattendants = item[45]
+                    if not item[46] == '':
+                        flight.passengercount = item[46]
+                    if not item[47] == '':
+                        flight.scheduleddeparttime = item[47]
+                    if not item[48] == '':
+                        flight.scheduledarrivaltime = item[48]
+                    if not item[49] == '':
+                        flight.scheduledblock = item[49]
+                    flight.rotationid = item[50]
+                    flight.aircrafttype = aircraft_type.aircraftmodel
+                    if item[54] != '':
+                        flight.scheduleddeparttimelocal = item[54]
+                    if item[55] != '':
+                        flight.scheduledarrivaltimelocal = item[55]
+                    if not item[4] == '' and deptimevalid:
+                        flight.deptimelocal = converttolocal(deptime[:5],depairportinfo[0]['gmt_offset_single'])
+                    elif not item[56] == '':
+                        flight.deptimelocal = item[56]
+                    if not item[4] == '' and offtimevalid:
+                        flight.offtimelocal = converttolocal(offtime[:5],depairportinfo[0]['gmt_offset_single'])
+                    elif not item[57] == '':
+                        flight.offtimelocal = item[57]
+                    if not item[6] == '' and ontimevalid:
+                        flight.ontimelocal=converttolocal(ontime[:5],arrairportinfo[0]['gmt_offset_single'])
+                    elif not item[58] =='':
+                        flight.ontimelocal = item[58] 
+                    if not item[6] == '' and arrtimevalid:
+                        flight.arrtimelocal=converttolocal(arrtime[:5],arrairportinfo[0]['gmt_offset_single'])
+                    elif not item[59] =='':
+                        flight.arrtimelocal = item[59] 
+                    if not item[60] =='':
+                        flight.reporttime = item[60]
+                        flight.reporttimelocal = item[61]
+                    if flight.total != None and flight.scheduledblock != None:
+                        if Decimal(flight.total) < Decimal(flight.scheduledblock):
+                            flight.minutesunder = Decimal(flight.scheduledblock)-Decimal(flight.total)
+                    elif item[62] != '':
+                        flight.minutesunder = item[62]
+                    flight.flightupdated = datetime.datetime.now()
+                    if item[64] != '':
+                        flight.flightcreated = item[64]
+                    if not item[4] == '' and not item[6] =='':
+                        if depairportinfo[0]['airport']['country'] != 'US' or arrairportinfo[0]['airport']['country'] != 'US': 
+                            flight.international = True
+                            flight.domestic = False
+                        else: 
+                            flight.international = False
+                            flight.domestic = True
+                    elif not item[65] == '' and item[66] != '':
+                        flight.domestic = item[65]
+                        flight.international = item[66]
+                    flight.paycode = item[67]
+                    if deptimevalid and arrtimevalid:
+                        flight.scheduledflight = False
+                    elif item[68] != '':
+                        flight.scheduledflight = item[68]
+                    if not item[69] == '':
+                        flight.deadheadflight = item[69]
+                    if not item[70] =='':
+                        flight.startdate = item[70]
+                    flight.departuregate = item[71]
+                    flight.arrivalgate = item[72]
+                    flight.flightpath = item[73]
+                    if not item[74] == '':
+                        flight.airspeed = item[74]
+                    if not item[75] == '':
+                        flight.filedalt = item[75]
+                    flight.save()
+            uploaded_file_url = filetype[0]
+            
+
+        if filetype[1] =='pdf':
+            
+            airline = perferences.airline
+            reader = PdfReader(myfile)
+            title = ((reader.pages[0]).extract_text()).split()
+            bidstart = datetime.datetime.strptime(title[8]+title[9]+title[10],'%B%d,%Y').date()
+            bidend = datetime.datetime.strptime(title[12]+title[13]+title[14],'%B%d,%Y').date()
+            bidperioddays = ((bidend-bidstart).days)+1
+            fs = FileSystemStorage('savedfiles')
+            fs.save(myfile.name, myfile)
+            for i in range(3,6):
+                page = reader.pages[i]
+                text = page.extract_text()
+                textsplit = text.split(' ')
+                line = []
+                wholelist = []
+                for item in textsplit:
+                    if '\n' in item:
+                        line = []
+                        base=item[-3:]
+                        line.append(base)
+                    elif item != '':
+                        line.append(item)
+                    
+                    if len(line) == 9:
+                        wholelist.append(line)
+                
+                for cat in wholelist:
+                    bidperiod = BidPeriod()
+                    if len(cat[0]+cat[1]+cat[2]) == 7:
+                        category = (cat[0]+cat[1]+cat[2])
+                        alvstart = cat[3].split(':')
+                        alv = int(alvstart[0])+round(int(alvstart[1])/60,2)
+                        alvrange = cat[4]
+                        reserve = cat[5]
+                        pattern = cat[6]
+                        if cat[7] == 'Yes':
+                            extraday = True
+                        if cat[7] == 'No':
+                            extraday = False
+                        rll = int(cat[8])
+                        
+                        if not BidPeriod.objects.filter(airline=airline,bidperiodstart=bidstart,bidperiodend=bidend,category=category).exists():
+                            bidperiod.calendarmonth = bidstart.month
+                            bidperiod.bidperiodstart = bidstart
+                            bidperiod.bidperiodend = bidend
+                            bidperiod.alv = alv
+                            bidperiod.alvrange = alvrange
+                            bidperiod.resguarentee = reserve
+                            bidperiod.reserverules = pattern
+                            bidperiod.extraday = extraday
+                            bidperiod.rll = rll
+                            bidperiod.airline = airline
+                            bidperiod.category = category
+                            bidperiod.bidperioddays = bidperioddays
+                            bidperiod.save()
+                nofile='File Successfully Uploaded'
+        return render(self.request, 'airline/upload.html', {
+            'nofile':nofile
+        })
+
+
 class DeletemultipleQuery(ListView):
     
     model = FlightTime

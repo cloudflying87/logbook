@@ -86,10 +86,12 @@ def converttohoursandminutes(converttime):
 
 def converttimetodecimal(converttime):
     #takes a str and converts it to a decimal
-    timeobject = datetime.strptime(converttime,'%H:%M').time()
-    hours = timeobject.hour
-    minutes = timeobject.minute
-    convertedtime = hours + round((minutes/60),2)
+    # timeobject = datetime.strptime(converttime,'%H:%M').time()
+    # hours = timeobject.hour
+    # minutes = timeobject.minute
+    # convertedtime = hours + round((minutes/60),2)
+    duration = converttime.split(':')
+    convertedtime = int(duration[0]) + round(int(duration[1])/60,2)
     return convertedtime
 
 def converttoUTC(localtime,timezone):
@@ -503,7 +505,33 @@ class LogbookEntry(FormView):
         obj = self.object.pk
         return reverse('summary', kwargs={'id': obj})
 
+
+class EditEntry(LogbookEntry,UpdateView):
+    
+    model = FlightTime
+    form = FlightTimeEntry
+    pk_url_kwarg = 'id'
+    template_name = 'logbook/editflight.html'
+    success_url = '/logbook/summary'
+
+class ViewEntry(DetailView):
+    
+    model = FlightTime
+    pk_url_kwarg = 'id'
+    context_object_name = "flight"
+    template_name = 'logbook/detail.html'
+
+class DeleteEntry(DeleteView):
+    
+    model = FlightTime
+    pk_url_kwarg = 'id'
+    context_object_name = "flight"
+    template_name = 'logbook/confirmdelete.html'
+    success_url = '/logbook'
+   
 def reworktimes2(request):
+    #these two were built for working with specific CSV files
+    
     currentuser = str(get_current_user())
     userid=User.objects.get(username=currentuser).pk
     filename = 'lulogbook2'
@@ -536,6 +564,7 @@ def reworktimes2(request):
     return HttpResponse(html)
 
 def reworktimes(request):
+    #this is used to convert my excel logbook to the web
     currentuser = str(get_current_user())
     userid=User.objects.get(username=currentuser).pk
     filename = 'airlinecurrent'
@@ -693,27 +722,3 @@ def reworktimes(request):
     timenow = datetime.now().strftime("%H:%M")
     html = "<html><body>Good to go. {%timenow%} </body></html>" 
     return HttpResponse(html)
-
-class EditEntry(LogbookEntry,UpdateView):
-    
-    model = FlightTime
-    form = FlightTimeEntry
-    pk_url_kwarg = 'id'
-    template_name = 'logbook/editflight.html'
-    success_url = '/logbook/summary'
-
-class ViewEntry(DetailView):
-    
-    model = FlightTime
-    pk_url_kwarg = 'id'
-    context_object_name = "flight"
-    template_name = 'logbook/detail.html'
-
-class DeleteEntry(DeleteView):
-    
-    model = FlightTime
-    pk_url_kwarg = 'id'
-    context_object_name = "flight"
-    template_name = 'logbook/confirmdelete.html'
-    success_url = '/logbook'
-   
