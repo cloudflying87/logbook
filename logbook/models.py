@@ -81,7 +81,7 @@ class FlightTime(models.Model):
     startdate = models.DateTimeField(blank=True,null=True)
     departuregate = models.CharField(max_length=50,blank=True,null=True)
     arrivalgate = models.CharField(max_length=50,blank=True,null=True)
-    flightpath = models.CharField(max_length=50,blank=True,null=True)
+    flightpath = models.CharField(max_length=250,blank=True,null=True)
     airspeed = models.IntegerField(blank=True,null=True)
     filedalt = models.IntegerField(blank=True,null=True)
 

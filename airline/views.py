@@ -428,6 +428,8 @@ class SimpleUpload(TemplateView):
 
     def post(self,form):
         nofile = "Test"
+        userid=getuserid()
+        perferences = Users.objects.get(user_id=userid)
         if 'myfile' not in self.request.FILES:
             nofile = "No File Selected"
             return render(self.request, 'airline/upload.html', {
@@ -435,12 +437,127 @@ class SimpleUpload(TemplateView):
         })
         myfile = self.request.FILES['myfile']
         filetype = myfile.name.split('.')
-        perferences = Users.objects.get(user_id=getuserid())
-        if filetype[1] =='csv':
+        count = 0
+        if 'scheduled' in filetype[0] and filetype[1] =='csv':
+            #adding scheduled flights to database. Should be a onetime use. 
             fs = FileSystemStorage('savedfiles')
             filename = fs.save(myfile.name, myfile)
             with open('./savedfiles/'+filename,'r') as read_file:
-                perferences = Users.objects.get(user_id=getuserid())
+                logbook = csv.reader(read_file)
+                zerohour = datetime.datetime.strptime('00:00:00', '%H:%M:%S').time()
+                next(logbook)
+                for item in logbook:
+                    count += 1
+                    if (count/50).is_integer():
+                        print('still working',count)
+                    deptimevalid = False
+                    offtimevalid = False
+                    ontimevalid = False
+                    arrtimevalid = False
+                    newtotal = False
+                    #Getting the record from the database
+                    if item[2] == '' or item[4] == '' or item[6] == '' or item[7] == '':
+                        continue
+                    try:
+                        flight = FlightTime.objects.get(flightdate=item[2],departure=item[4],arrival=item[6],flightnum=item[7])
+                    except (FlightTime.DoesNotExist, FlightTime.MultipleObjectsReturned) as error:
+                        print(error)
+                        with open('./savedfiles/dontexsist.csv','a') as outfile:
+                            write = csv.writer(outfile)
+                            write.writerow(item)
+
+                    #getting flightdate and airport information
+                    flightdate = flight.flightdate
+                    unixdate = time.mktime(flightdate.timetuple())  
+                    depairportinfo = gettingairportinfo(flight.departure,unixdate,flightdate)
+                    arrairportinfo = gettingairportinfo(flight.arrival,unixdate,flightdate)
+
+                    #Filling the Off and On times and calculating flight time
+                    if flight.offtime == zerohour and item[9] != '':
+                        flight.offtime = item[9]
+                        offtimevalid = True
+
+                    if flight.ontime == zerohour and item[10] != '':
+                        flight.ontime = item[10]
+                        ontimevalid = True
+
+                    if flight.flighttime == 0 and flight.offtime != '' and flight.ontime != '':
+                        flight.flighttime = calculatetimes(str(flight.offtime)[:5],str(flight.ontime)[:5],perferences.decimalplaces,perferences.decimal)
+                    elif item[52] != '':
+                        flight.flighttime = item[52]
+
+                    # adding the scheduled departure times and arrival times from the CSV file
+                    if not item[47] == '':
+                        flight.scheduleddeparttime = item[47]
+                    if not item[48] == '':
+                        flight.scheduledarrivaltime = item[48]
+
+                    #calculating scheduled block
+                    if item[49] != '':
+                        flight.scheduledblock = item[49]
+                    elif item[49] == '' and flight.scheduleddeparttime != None and flight.scheduledarrivaltime != None:
+                        flight.scheduledblock = calculatetimes(flight.scheduleddeparttime,flight.scheduledarrivaltime,perferences.decimalplaces,perferences.decimal)
+
+                    # Calculating minutes under
+                    if flight.total != None and flight.scheduledblock != None:
+                        if Decimal(flight.total) < Decimal(flight.scheduledblock):
+                            flight.minutesunder = Decimal(flight.scheduledblock)-Decimal(flight.total)
+                    elif item[62] != '':
+                        flight.minutesunder = item[62]
+
+                    flight.rotationid = item[50]
+
+                    if flight.deptime != None and item[56] == '':
+                        flight.deptimelocal = converttolocal(str(flight.deptime)[:5],depairportinfo[0]['gmt_offset_single'])
+                    elif not item[56] == '':
+                        flight.deptimelocal = item[56]
+
+                    if flight.offtime != None and item[57] == '':
+                        flight.offtimelocal = converttolocal(str(flight.offtime)[:5],depairportinfo[0]['gmt_offset_single'])
+                    elif not item[57] == '':
+                        flight.offtimelocal = item[57]
+
+                    if flight.ontime != None and item[58] == '':
+                        flight.ontimelocal=converttolocal(str(flight.ontime)[:5],arrairportinfo[0]['gmt_offset_single'])
+                    elif not item[58] =='':
+                        flight.ontimelocal = item[58] 
+
+                    if flight.arrtime != None and item[59] == '':
+                        flight.arrtimelocal=converttolocal(str(flight.arrtime)[:5],arrairportinfo[0]['gmt_offset_single'])
+                    elif not item[59] =='':
+                        flight.arrtimelocal = item[59] 
+
+                    if not item[60] =='':
+                        flight.reporttime = item[60]
+                        flight.reporttimelocal = item[61]
+
+                    flight.flightupdated = datetime.datetime.now()
+
+                    if flight.deptime != None and flight.arrtime != None:
+                        flight.scheduledflight = False
+                    elif item[68] != '':
+                        flight.scheduledflight = item[68]
+
+                    if not item[69] == '':
+                        flight.deadheadflight = item[69]
+
+                    if not item[70] =='':
+                        flight.startdate = item[70]
+
+                    flight.departuregate = item[71]
+                    flight.arrivalgate = item[72]
+                    flight.flightpath = item[73]
+                    if not item[74] == '':
+                        flight.airspeed = item[74]
+                    if not item[75] == '':
+                        flight.filedalt = item[75]
+
+                    flight.save()
+        if filetype[1] =='csv' and not 'scheduled' in filetype[0]:
+            #takes the output file and saves it to the database. Will recalulate anything that is blank but can be calculated based on OOOI times other wise it will just post whatever it has. 
+            fs = FileSystemStorage('savedfiles')
+            filename = fs.save(myfile.name, myfile)
+            with open('./savedfiles/'+filename,'r') as read_file:
                 logbook = csv.reader(read_file)
                 next(logbook)
                 for item in logbook:
@@ -453,7 +570,7 @@ class SimpleUpload(TemplateView):
                     if len(item) < 75:
                         continue
                     # flight.id =item[0]
-                    flight.userid =item[1]
+                    flight.userid = userid
                     if not item[2] == '':
                         flight.flightdate =item[2]
                         flightdate = datetime.datetime.strptime(item[2],'%Y-%m-%d')
@@ -490,7 +607,6 @@ class SimpleUpload(TemplateView):
                             arrtime = item[11]
                             arrtimevalid = True
                     if deptimevalid and arrtimevalid and item[26] == '':
-                        print('total')
                         flight.total = calculatetimes(deptime,arrtime,perferences.decimalplaces,perferences.decimal)
                         newtotal = True
                     elif item[26] != '':
@@ -574,15 +690,15 @@ class SimpleUpload(TemplateView):
                         if int(flight.landings) > 0:
                             flight.nightlandings = nightcalc[2]
                             flight.daylandings = nightcalc[3]
-
-                    if not item[27] == '':
-                        flight.day = item[27]
-                    if not item[28] == '':
-                        flight.daylandings = item[28]
-                    if not item[29] == '':
-                        flight.night = item[29]
-                    if not item[30] == '':
-                        flight.nightlandings = item[30]
+                    else:
+                        if not item[27] == '':
+                            flight.day = item[27]
+                        if not item[28] == '':
+                            flight.daylandings = item[28]
+                        if not item[29] == '':
+                            flight.night = item[29]
+                        if not item[30] == '':
+                            flight.nightlandings = item[30]
                     flight.printcomments = item[31]
                     flight.personalcomments = item[32]
                     if not item[33] == '':
