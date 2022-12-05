@@ -214,8 +214,8 @@ def importingevents(request):
     
     service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials[1])
     # here is retreving calendar events and then working them correctly to get everything in the database. 
-    # now = datetime.datetime.today().replace(day=1).isoformat() +'Z'
-    now = '2018-11-01T05:10:29.398711Z'
+    now = datetime.datetime.today().replace(day=1).isoformat() +'Z'
+    # now = '2018-11-01T05:10:29.398711Z'
     calendarId=credentials[0]
     page_token = None
     monthrotations = []
@@ -561,7 +561,6 @@ class SimpleUpload(TemplateView):
                 logbook = csv.reader(read_file)
                 next(logbook)
                 for item in logbook:
-                    print(item)
                     deptimevalid = False
                     offtimevalid = False
                     ontimevalid = False
