@@ -619,13 +619,15 @@ class SimpleUpload(TemplateView):
                     
                     if perferences.cx and item[4] != '' and item[6] !='' and item[53] == '':
                         distance = (great_circle((depairportinfo[0]['airport']['lat'],depairportinfo[0]['airport']['long']),(arrairportinfo[0]['airport']['lat'],arrairportinfo[0]['airport']['long'])).nm)
+
                         flight.distance = distance
                         if distance > 50 and item[24] == '':
                             flight.crosscountry = flight.total
-                        elif not item[24] == '':
-                            flight.crosscountry = item[24]
                     elif item[53] != '':
                         flight.distance = item[53]
+                    
+                    if item[24] != '':
+                            flight.crosscountry = item[24]
                     
 
                     if not item[12] == '':
