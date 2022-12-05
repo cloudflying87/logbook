@@ -792,8 +792,24 @@ class SimpleUpload(TemplateView):
                     flight.save()
             uploaded_file_url = filetype[0]
             
+        if filetype[1] =='pdf' and 'delta' in filetype[0]:
+            airline = perferences.airline
+            reader = PdfReader(myfile)
+            numpages = reader.numPages
+            for i in range(0,numpages):
+                page = reader.pages[i]
+                text = page.extract_text()
+                textsplit = text.split('\n')
+                for item in textsplit:
+                    itemsplit = item.split(' ')
+                    if len(itemsplit) > 7:
 
-        if filetype[1] =='pdf':
+                        with open('./savedfiles/fleet.csv','a') as outfile:
+                            write = csv.writer(outfile)
+                            write.writerow(itemsplit)
+
+
+        if filetype[1] =='pdf' and not 'delta' in filetype[0]:
             
             airline = perferences.airline
             reader = PdfReader(myfile)

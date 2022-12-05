@@ -33,8 +33,17 @@ class AircraftModel(models.Model):
         return self.type
 class NewPlaneMaster(models.Model):
     nnumber = models.CharField(primary_key=True, max_length=50, null=False,default = '0')
-    taa = models.BooleanField
+    shipnumber = models.IntegerField(null=True,blank=True)
     aircraftmodel = models.ForeignKey(AircraftModel, default = 12345678, on_delete=models.SET_DEFAULT)
+    technicalaircraftmodel = models.CharField(max_length=200, null=True, blank=True) 
+    configuration = models.CharField(max_length=200, null=True, blank=True)
+    serialnumber = models.IntegerField(null=True,blank=True)
+    vartab = models.CharField(max_length=200, null=True, blank=True)
+    lnnbr = models.IntegerField(blank=True,null=True)
+    seatingconfig = models.CharField(max_length=200, null=True, blank=True)
+    enginetype = models.CharField(max_length=200, null=True, blank=True)
+    manufacturedate = models.CharField(max_length=200, null=True, blank=True)
+    taa = models.BooleanField
     notes = models.CharField(max_length=200, null=True, blank=True)
     date_added = models.DateTimeField(blank=True, null=True, default=utils.timezone.now)
     date_edited = models.DateTimeField(blank=True, null=True, default=utils.timezone.now)
