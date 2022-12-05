@@ -81,6 +81,8 @@ def addingtimeanddate(flightdate,starttime,utcoffset):
 def converttohoursandminutes(converttime):
     #taking a decimal and converting it to an hours:min string
     minsched = int((converttime - int(converttime))*60)
+    if minsched < 10:
+        minsched = '0'+str(minsched)
     hoursmin = str(int(converttime))+':'+str(minsched)
     return hoursmin
 
@@ -352,24 +354,34 @@ def summary(request,id):
             blockmessage = f'{actualhoursmin} was {minunder} minutes over {schedhoursmin} block'
     rotationinfo = FlightTime.objects.filter(userid=userid,rotationid=flight.rotationid)
     mainrotationinfo = Rotations.objects.get(userid=userid,rotationid=flight.rotationid)
-    print(mainrotationinfo.rotationpay)
     actualblock = 0
     scheduledblock = 0
     passengercount = 0
     distancecount = 0
+    creditremaining = mainrotationinfo.rotationpay
     for leg in rotationinfo:
         if leg.total != None:
+            if leg.total < leg.scheduledblock:
+                creditremaining -= leg.scheduledblock
+            else:
+                creditremaining -= leg.total
             actualblock = actualblock + leg.total
-            passengercount =+ leg.passengercount
-            distancecount =+ leg.distance
+            passengercount += leg.passengercount
+            distancecount += leg.distance
         else:
-            actualblock = actualblock + leg.scheduledblock
+            if leg.deadheadflight == False:
+                actualblock = actualblock + leg.scheduledblock
+            creditremaining -= leg.scheduledblock
         
-        scheduledblock = scheduledblock+leg.scheduledblock
+        if leg.deadheadflight == False:
+            scheduledblock = scheduledblock+leg.scheduledblock
+    
+    if creditremaining < 0:
+        creditremainingmessage = str(converttohoursandminutes((creditremaining)))+ ' over block'
+    else:
+        creditremainingmessage = str(converttohoursandminutes((creditremaining)))+ ' under block'
         
-
-    rotationinfo2 = (actualblock,scheduledblock)    
-    return render(request,'logbook/summary.html', {'flight':flight,'departmessage':departmessage,'arrivemessage':arrivemessage,'actualblock':actualblock,'blockmessage':blockmessage,'mainrotationinfo':mainrotationinfo,'passengercount':passengercount,'distance':distancecount})
+    return render(request,'logbook/summary.html', {'flight':flight,'departmessage':departmessage,'arrivemessage':arrivemessage,'actualblock':actualblock,'blockmessage':blockmessage,'mainrotationinfo':mainrotationinfo,'passengercount':passengercount,'distance':distancecount,'scheduledblock':scheduledblock,'creditremaining':creditremainingmessage})
 
 # class EntrySummary(TemplateView):
 #     template_name = 'logbook/summary.html'

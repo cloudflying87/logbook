@@ -14,9 +14,11 @@
     <br>{{blockmessage}}
 
     <br>Trip Block {{actualblock}}
-    <br>Trip Credit {{mainrotationinfo.rotationpay}}
+    <br>Scheduled Block {{scheduledblock}}
+    <br>{{creditremaining}}
+    <br>Trip Pay {{mainrotationinfo.rotationpay}}
 
-    <br>Flight {% if flight.passengercount %}
+    <br>{% if flight.passengercount %}
             {{flight.passengercount}} 
         {% else %}
             0
