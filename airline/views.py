@@ -561,6 +561,7 @@ class SimpleUpload(TemplateView):
                 logbook = csv.reader(read_file)
                 next(logbook)
                 for item in logbook:
+                    print(item)
                     deptimevalid = False
                     offtimevalid = False
                     ontimevalid = False
@@ -732,9 +733,13 @@ class SimpleUpload(TemplateView):
                         flight.scheduledblock = item[49]
                     flight.rotationid = item[50]
                     flight.aircrafttype = aircraft_type.aircraftmodel
-                    if item[54] != '':
+                    if item[47] != '' and item[54] == '':
+                        flight.scheduleddeparttimelocal = converttolocal(item[47][:5],depairportinfo[0]['gmt_offset_single'])
+                    elif item[54] != '':
                         flight.scheduleddeparttimelocal = item[54]
-                    if item[55] != '':
+                    if item[48] != '' and item[55] == '':
+                        flight.scheduledarrivaltimelocal = converttolocal(item[48][:5],depairportinfo[0]['gmt_offset_single'])
+                    elif item[55] != '':
                         flight.scheduledarrivaltimelocal = item[55]
                     if not item[4] == '' and deptimevalid:
                         flight.deptimelocal = converttolocal(deptime[:5],depairportinfo[0]['gmt_offset_single'])
