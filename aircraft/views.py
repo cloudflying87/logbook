@@ -54,7 +54,10 @@ class CategoryDisplayAll(TemplateView):
                 night = Sum('night'),
                 landings = Sum('landings'),
             )}
-            record = {'aircraftype':airtype['aircrafttype'],'info':{'aircraftsummary':{'airtotal':info['aircraftsummary']['airtotal'],'avgflight':round((info['aircraftsummary']['avgflight']),2),'numflight':info['aircraftsummary']['numflight'],'avgmiles':int(round((info['aircraftsummary']['avgmiles']),0)),'totalmiles':info['aircraftsummary']['totalmiles'],'avgpax':int(round((info['aircraftsummary']['avgpax']),0)),'totalpax':info['aircraftsummary']['totalpax'],'night':info['aircraftsummary']['night'],'landings':info['aircraftsummary']['landings']}}}
+            lastflown = FlightTime.objects.filter(userid=userid,aircrafttype=airtype['aircrafttype']).exclude(scheduledflight=1).latest('flightdate')
+
+            
+            record = {'aircraftype':airtype['aircrafttype'],'info':{'aircraftsummary':{'airtotal':info['aircraftsummary']['airtotal'],'avgflight':round((info['aircraftsummary']['avgflight']),2),'numflight':info['aircraftsummary']['numflight'],'avgmiles':int(round((info['aircraftsummary']['avgmiles']),0)),'totalmiles':info['aircraftsummary']['totalmiles'],'avgpax':int(round((info['aircraftsummary']['avgpax']),0)),'totalpax':info['aircraftsummary']['totalpax'],'night':info['aircraftsummary']['night'],'landings':info['aircraftsummary']['landings']}},'lastflown':lastflown}
             
             if record['info']['aircraftsummary']['airtotal'] > 0:
                 qs.append(record)
@@ -86,10 +89,12 @@ class CategoryDisplay(TemplateView):
                     night = Sum('night'),
                     landings = Sum('landings'),
                 )}
+                lastflown = FlightTime.objects.filter(userid=userid,aircrafttype=airtype).exclude(scheduledflight=1).latest('flightdate')
+                
                 #making it so that i can round the results the way I want
                 #them before appending them to the list to send them to the
                 #template in the context
-                record = {'aircraftype':airtype,'info':{'aircraftsummary':{'airtotal':info['aircraftsummary']['airtotal'],'avgflight':round((info['aircraftsummary']['avgflight']),2),'numflight':info['aircraftsummary']['numflight'],'avgmiles':int(round((info['aircraftsummary']['avgmiles']),0)),'totalmiles':info['aircraftsummary']['totalmiles'],'avgpax':int(round((info['aircraftsummary']['avgpax']),0)),'totalpax':info['aircraftsummary']['totalpax'],'night':info['aircraftsummary']['night'],'landings':info['aircraftsummary']['landings']}}}
+                record = {'aircraftype':airtype,'info':{'aircraftsummary':{'airtotal':info['aircraftsummary']['airtotal'],'avgflight':round((info['aircraftsummary']['avgflight']),2),'numflight':info['aircraftsummary']['numflight'],'avgmiles':int(round((info['aircraftsummary']['avgmiles']),0)),'totalmiles':info['aircraftsummary']['totalmiles'],'avgpax':int(round((info['aircraftsummary']['avgpax']),0)),'totalpax':info['aircraftsummary']['totalpax'],'night':info['aircraftsummary']['night'],'landings':info['aircraftsummary']['landings']}},'lastflown':lastflown}
                 if record['info']['aircraftsummary']['airtotal'] != None:
                     qs.append(record)
         tairtotal = 0; tavgflight = 0; tnumflight = 0; tavgmiles = 0

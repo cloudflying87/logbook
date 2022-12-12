@@ -30,6 +30,7 @@
         <th>Avg Pax</th>
         <th>Night</th>
         <th>Landings</th>
+        <th>Last Flown</th>
     </tr>
     {% for item in qs%}
     
@@ -44,6 +45,7 @@
         <td>{{item.info.aircraftsummary.avgpax}}</td>
         <td>{{item.info.aircraftsummary.night}}</td>
         <td>{{item.info.aircraftsummary.landings}}</td>
+        <td><a href="/logbook/view/{{item.lastflown.id}}"> {{item.lastflown.flightdate}}</a></td>
     </tr>
     {% endfor %}
 </table> 

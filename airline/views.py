@@ -553,6 +553,7 @@ class SimpleUpload(TemplateView):
                         flight.filedalt = item[75]
 
                     flight.save()
+            nofile='Scheduled information saved to the database'
         if filetype[1] =='csv' and not 'scheduled' in filetype[0]:
             #takes the output file and saves it to the database. Will recalulate anything that is blank but can be calculated based on OOOI times other wise it will just post whatever it has. 
             fs = FileSystemStorage('savedfiles')
@@ -796,25 +797,57 @@ class SimpleUpload(TemplateView):
                     if not item[75] == '':
                         flight.filedalt = item[75]
                     flight.save()
-            uploaded_file_url = filetype[0]
+            nofile='Logbook information saved to the database'
             
         if filetype[1] =='pdf' and 'delta' in filetype[0]:
             airline = perferences.airline
+            fs = FileSystemStorage('savedfiles')
+            fs.save(myfile.name, myfile)
             reader = PdfReader(myfile)
             numpages = reader.numPages
+            broken = False
             for i in range(0,numpages):
                 page = reader.pages[i]
                 text = page.extract_text()
                 textsplit = text.split('\n')
                 for item in textsplit:
                     itemsplit = item.split(' ')
+                    if broken == True:
+                        break
+                        
                     if len(itemsplit) > 7:
+                        aircraft = NewPlaneMaster()
+                        if itemsplit[0].isnumeric():
+                            try:
+                                NewPlaneMaster.objects.get(nnumber=itemsplit[2])
+                                print(itemsplit[0],itemsplit[1],itemsplit[2],itemsplit[3],itemsplit[4])
+                                continue
+                            except:
+                                aircraft.shipnumber = itemsplit[0]
+                                aircraft.configuration = itemsplit[1]
+                                aircraft.nnumber = itemsplit[2]
+                                aircraft.serialnumber = itemsplit[3]
+                                aircraft.manufacturedate = itemsplit[4]
+                                if itemsplit[1][0] == '7':
+                                    try:
+                                        modifiedsplit = itemsplit[0],itemsplit[1],itemsplit[2],itemsplit[3],itemsplit[4],itemsplit[6],itemsplit[7],itemsplit[8]
+                                        
+                                    except:
+                                        print(itemsplit)
+                                elif itemsplit[5] == "TRENT":
+                                    modifiedsplit = itemsplit[0],itemsplit[1],itemsplit[2],itemsplit[3],itemsplit[4],itemsplit[5]+'-'+itemsplit[6],itemsplit[7],itemsplit[8]
+                                else:
+                                    modifiedsplit = itemsplit[0],itemsplit[1],itemsplit[2],itemsplit[3],itemsplit[4],itemsplit[5],itemsplit[6],itemsplit[7]
+                                with open('./savedfiles/fleet.csv','a') as outfile:
+                                    write = csv.writer(outfile)
+                                    write.writerow(modifiedsplit)
 
-                        with open('./savedfiles/fleet.csv','a') as outfile:
-                            write = csv.writer(outfile)
-                            write.writerow(itemsplit)
-
-
+                    if itemsplit[0] == 'THESE':
+                        broken = True
+                        break
+                        
+                            
+            nofile='Aircraft File Successfully Processed'
         if filetype[1] =='pdf' and not 'delta' in filetype[0]:
             
             airline = perferences.airline
