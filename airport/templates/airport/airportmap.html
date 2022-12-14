@@ -1,0 +1,17 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Flight Map</h1>
+<div class = 'mainlogbook'>
+
+    <form method="post" id="form-container">
+        {% csrf_token %}
+        {% load crispy_forms_tags %}
+        {% crispy form %}
+    </form>
+    
+</div>
+
+{% endblock%}

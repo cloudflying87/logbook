@@ -1,0 +1,12 @@
+{% extends 'logbook/base.html' %}
+
+
+{% block content %}
+{% include 'logbook/navbar.html' %}    
+<h1>Flight Map</h1>
+
+{% autoescape off %}
+{{ flight }}
+{% endautoescape %}
+
+{% endblock%}

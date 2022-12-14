@@ -24,15 +24,26 @@ from django.db.models import Q
 import datetime
 import requests
 import csv
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 import io
-from django.http import FileResponse
 from reportlab.pdfgen import canvas
 
 @login_required(login_url='/')
 def reporthome(request):
     print('hello')
 
+
+def callingdatabasedates(startdate,enddate,userid):
+    if type(startdate) == str and type(enddate) == str:
+        flights = FlightTime.objects.filter(userid=userid,flightdate__gt=startdate,flightdate__lt=enddate).exclude(scheduledflight=True,deadheadflight=True)
+    if type(startdate) == bool and type(enddate) == bool:
+            flights = FlightTime.objects.filter(userid=userid).exclude(scheduledflight=True,deadheadflight=True)
+    if type(startdate) == str and type(enddate) == bool:
+        flights = FlightTime.objects.filter(userid=userid,flightdate__gt=startdate).exclude(scheduledflight=True,deadheadflight=True)
+    if type(startdate) == bool and type(enddate) == str:
+        flights = FlightTime.objects.filter(userid=userid,flightdate__lt=enddate).exclude(scheduledflight=True,deadheadflight=True)
+
+    return flights
 class ReportBase(TemplateView):
     model = FlightTime
     context_object_name = "flight"
@@ -337,17 +348,7 @@ class Export(FormView):
 
         return response
 
-def callingdatabasedates(startdate,enddate,userid):
-    if type(startdate) == str and type(enddate) == str:
-        flights = FlightTime.objects.filter(userid=userid,flightdate__gt=startdate,flightdate__lt=enddate).exclude(scheduledflight=True,deadheadflight=True)
-    if type(startdate) == bool and type(enddate) == bool:
-            flights = FlightTime.objects.filter(userid=userid).exclude(scheduledflight=True,deadheadflight=True)
-    if type(startdate) == str and type(enddate) == bool:
-        flights = FlightTime.objects.filter(userid=userid,flightdate__gt=startdate).exclude(scheduledflight=True,deadheadflight=True)
-    if type(startdate) == bool and type(enddate) == str:
-        flights = FlightTime.objects.filter(userid=userid,flightdate__lt=enddate).exclude(scheduledflight=True,deadheadflight=True)
 
-    return flights
 def exportflighttimeall(request):
 
     userid=getuserid()
