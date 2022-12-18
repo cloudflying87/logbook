@@ -138,6 +138,8 @@ class FlightMap(FormView):
     template_name = 'airport/airportmap.html'
     form_class = DateSelector
     success_url = '../airport/drawmap'
+    masterlist = []
+    airportlist = []
 
     
     def form_valid(self,form):
