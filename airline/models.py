@@ -19,8 +19,8 @@ class PayTables(models.Model):
     payamount = models.DecimalField(max_digits=8, blank=True, decimal_places=2,null=True)
     position = models.CharField(max_length=2,null=True,blank=True)
     airline = models.ForeignKey(AirlineList,default ='', max_length=100,on_delete=models.SET_DEFAULT)
-    def __str__(self):
-        return self.paydate,self.aircraft,self.payamount,self.position
+    # def __str__(self):
+    #     return self.effectivedate,self.aircraft,self.payamount,self.position
 
 class PayCalculations(models.Model):
     userid= models.IntegerField(default = 1)
@@ -74,7 +74,7 @@ class BidPeriod(models.Model):
 
     
     def __str__(self):
-        return self.calendarmonth,self.bidperiodstart,self.bidperiodend,self.alv
+        return self.calendarmonth,str(self.bidperiodstart),str(self.bidperiodend),self.category,str(self.alv)
 
 
 

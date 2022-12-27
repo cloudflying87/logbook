@@ -54,10 +54,10 @@ def gettingairport(icao,passingtime):
             return({'airport':airport[0],'timezoneinfo':timezoneinfo,'gmt_offset_single':gmt_offset_single, 'daylightsavings':daylightsavings})
 
 def airporturl(request,icao):
-    print(icao)
+    
     passingtime = time.time()
     gatheredinfo = gettingairport(icao,passingtime)
-    print(gatheredinfo)
+    
     if gatheredinfo == 'missing':
         messages.success(request,icao+" Not Found")
         return render(request, 'airport/airport_main.html', {})
@@ -134,12 +134,12 @@ def callingdatabasedates2(startdate,enddate,userid):
 
     return flights
 
+masterlist = []
+airportlist = []
 class FlightMap(FormView):
     template_name = 'airport/airportmap.html'
     form_class = DateSelector
     success_url = '../airport/drawmap'
-    masterlist = []
-    airportlist = []
 
     
     def form_valid(self,form):
@@ -154,6 +154,8 @@ class FlightMap(FormView):
         else:
             enddate = form['enddate'].value()
         
+        masterlist = []
+        airportlist = []
         try:
             flights = callingdatabasedates2(startdate,enddate,userid)
         except:
@@ -164,7 +166,7 @@ class FlightMap(FormView):
             os.remove('./savedfiles/airports.csv')
             
 
-        headerList = ['icao','airport','city','state','elev','lat','long']
+        headerList = ['icao','airport','city','state','lat','long']
         
         # open CSV file and assign header
         with open("./savedfiles/airports.csv", 'w') as file:
@@ -183,11 +185,13 @@ class FlightMap(FormView):
             dw = csv.DictWriter(file, delimiter=',', 
                                 fieldnames=headerList)
             dw.writeheader()
+        print(len(flights))
         for flight in flights:
             write = False
             # for most airline flights or just different departure and arrival airports this will work
-            if flight.departure != flight.arrival and flight.departure != None and flight.arrival != None:
-                writecsv(flight.departure,flight.arrival)
+            
+            if flight.departure != flight.arrival and flight.departure != None and flight.arrival != None and (flight.route == None or flight.route == ''):
+                test = writecsv(flight.departure,flight.arrival)
                 
             if flight.route != None and flight.route != '' and flight.departure == flight.arrival:
                 route = (flight.route).split('-')
@@ -197,6 +201,7 @@ class FlightMap(FormView):
                 elif len(route) == 2:
                     writecsv(flight.departure,route[0])
                     writecsv(route[0],route[1])
+                    writecsv(route[1],flight.arrival)
                 elif len(route) == 3:
                     writecsv(flight.departure,route[0])
                     writecsv(route[0],route[1])
@@ -231,13 +236,21 @@ class FlightMap(FormView):
                     writecsv(route[0],route[1])
                     writecsv(route[1],route[2])
                     writecsv(route[2],flight.arrival)
-        
+        with open('./savedfiles/map.csv','a') as outfile:
+                write = csv.writer(outfile)
+                rowinfo = len(test[0]),len(test[1]),len(flights)
+                write.writerow(rowinfo)
+                # write.writerow(len(test[0]))
+                # write.writerow(len(test[1]))
+                # write.writerow(len(flights))
+
+        print('unique city pairs',len(test[0]),'unique airports',len(test[1]))
         return super().form_valid(form)
         # return self.render_to_response({'total':form})
-masterlist = []
-airportlist = []
+
 def writecsv(departure,arrival):
     citypair = [departure,arrival]
+    # print('unique city pairs',len(masterlist),'unique airports',len(airportlist))
     passingtime = time.time()
     citypair.sort()
     if not citypair in masterlist:
@@ -261,9 +274,8 @@ def writecsv(departure,arrival):
                 with open('./savedfiles/airports.csv','a') as outfile:
                     write = csv.writer(outfile)
                     write.writerow(airportinfo)
-    # def get_success_url(self, **kwargs):
-    #     obj = self.object.pk
-    #     return reverse('summary', kwargs={'id': obj})
+    return masterlist,airportlist
+    
 def drawmap(request):
 
     df_airports = pd.read_csv('./savedfiles/airports.csv')
@@ -273,6 +285,19 @@ def drawmap(request):
     df_flight_paths.head()
 
     fig = go.Figure()
+
+    flight_paths = []
+    for i in range(len(df_flight_paths)):
+        fig.add_trace(
+            go.Scattergeo(
+                locationmode = 'USA-states',
+                lon = [df_flight_paths['start_lon'][i], df_flight_paths['end_lon'][i]],
+                lat = [df_flight_paths['start_lat'][i], df_flight_paths['end_lat'][i]],
+                mode = 'lines',
+                line = dict(width = 1,color = 'red'),
+                # opacity = float(df_flight_paths['cnt'][i]) / float(df_flight_paths['cnt'].max()),
+            )
+        )
     
     fig.add_trace(go.Scattergeo(
         locationmode = 'USA-states',
@@ -290,19 +315,6 @@ def drawmap(request):
             )
         )))
 
-    flight_paths = []
-    for i in range(len(df_flight_paths)):
-        fig.add_trace(
-            go.Scattergeo(
-                locationmode = 'USA-states',
-                lon = [df_flight_paths['start_lon'][i], df_flight_paths['end_lon'][i]],
-                lat = [df_flight_paths['start_lat'][i], df_flight_paths['end_lat'][i]],
-                mode = 'lines',
-                line = dict(width = 1,color = 'red'),
-                # opacity = float(df_flight_paths['cnt'][i]) / float(df_flight_paths['cnt'].max()),
-            )
-        )
-
     fig.update_layout(
         title_text = 'My Flights',
         showlegend = False,
@@ -317,7 +329,6 @@ def drawmap(request):
 
     # fig.show()
     fightml = fig.to_html()
-    # plt_div = plot(fig, output_type='div')
     return render(request,'airport/drawmap.html',{'flight':fightml})
 class AirportLookup(TemplateView):
     template_name = 'reports/airportreport.html'

@@ -1,5 +1,5 @@
 from django.urls import path
-from reports.views import Export,FlightAware, ReportBase, TotalsByDate, TotalsOnly, Lookup,TopAirports, exportflighttimeall, FlightawareRequest, editingFAdocument,PDFExport
+from reports.views import Export,FlightAware, ReportBase, TotalsByDate, TotalsOnly, Lookup,TopAirports, exportflighttimeall, FlightawareRequest, editingFAdocument,PDFExport,PilotSearch
 
 
 urlpatterns = [
@@ -13,6 +13,7 @@ urlpatterns = [
     path('pdf', PDFExport.as_view(), name="pdf"),
     path('exportflighttime', exportflighttimeall, name="exportflighttimeall"),
     path('dates', FlightawareRequest.as_view(), name="dateselector"),
+    path('pilotsearch', PilotSearch.as_view(), name="pilotsearch"),
     path('editing', editingFAdocument, name="editing"),
 
     

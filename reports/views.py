@@ -150,15 +150,15 @@ class TotalsByDate(TemplateView):
         
         return self.render_to_response({"yeartotals":yeartotals,'labels':labels,'years':years,'pax':pax,'miles':miles,"title":pagetitle})
 
-class SearchPilot(TemplateView):
-    template_name = 'reports/pilotsearch'
+class PilotSearch(TemplateView):
+    template_name = 'reports/pilotsearch.html'
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         userid=getuserid()
         pagetitle = "Pilot Lookup"
-        secondrequest = request.GET.get('lookup[id]')
+        pilotlookup = request.POST['PilotSearch']
 
-        info = FlightTime.objects.filter(userid=userid,captain=secondrequest).aggregate(
+        info = FlightTime.objects.filter(Q(captain__icontains=pilotlookup)|Q(firstofficer__icontains=pilotlookup),userid=userid).aggregate(
                     airtotal = Sum('total'),
                     miletotal = Sum('distance'),
                     paxtotal = Sum('passengercount'),
@@ -167,9 +167,10 @@ class SearchPilot(TemplateView):
                     avgdistance = Avg('distance'),
                     avgpax = Avg('passengercount')
             )
-        flights = FlightTime.objects.filter(userid=userid,aircraftId=secondrequest).exclude(scheduledflight=True).order_by('-flightdate')
         
-        return self.render_to_response({"title":pagetitle,"years":info,"depart":flights})
+        flights = FlightTime.objects.filter(Q(captain__icontains=pilotlookup)|Q(firstofficer__icontains=pilotlookup),userid=userid).exclude(scheduledflight=True).order_by('-flightdate')
+        print(info,flights)
+        return self.render_to_response({"title":pagetitle,'info':info,'flights':flights})
 class FlightAware(TemplateView):
     template_name = 'reports/flightaware.html'
 
