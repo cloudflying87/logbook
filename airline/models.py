@@ -11,7 +11,7 @@ class AirlineList(models.Model):
     airlinedescription = models.CharField(max_length=200,blank=True,null=True)
     airlinesize = models.IntegerField()
     def __str__(self):
-        return self.airlinecode
+        return self.airlinecode,self.airlinename,self.airlinedescription
 class PayTables(models.Model):
     effectivedate = models.DateField(default=utils.timezone.now)
     aircraft = models.CharField(max_length=30,null=True,blank=True)
@@ -19,8 +19,8 @@ class PayTables(models.Model):
     payamount = models.DecimalField(max_digits=8, blank=True, decimal_places=2,null=True)
     position = models.CharField(max_length=2,null=True,blank=True)
     airline = models.ForeignKey(AirlineList,default ='', max_length=100,on_delete=models.SET_DEFAULT)
-    # def __str__(self):
-    #     return self.effectivedate,self.aircraft,self.payamount,self.position
+    def __str__(self):
+        return str(self.effectivedate),self.aircraft,str(self.payamount),self.position
 
 class PayCalculations(models.Model):
     userid= models.IntegerField(default = 1)
@@ -56,7 +56,7 @@ class Rotations(models.Model):
     airline = models.ForeignKey(AirlineList,default ='DAL', max_length=100,on_delete=models.SET_DEFAULT,blank=True, null=True)
     rawdata = tinymce_models.HTMLField(blank=True, null=True)
     def __str__(self):
-        return str(self.rotationid),str(self.rotationstart)
+        return str(self.rotationid),str(self.rotationstart),str(self.rotationend),str(self.overnights),str(self.rotationpay)
 
 class BidPeriod(models.Model):
     calendarmonth = models.CharField(max_length=50,blank=True,null=True)

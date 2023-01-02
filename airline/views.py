@@ -422,6 +422,10 @@ class DeltaScheduleEntry(ListView):
         logbookdisplay = FlightTime.objects.all().filter(userid=getuserid(),scheduledflight=True,flightdate__gt=scheduledflightdatecutoff).order_by('flightdate','scheduleddeparttimelocal')
         return logbookdisplay
 
+def showingrotationinfo():
+    #used to start the rotation pay calculations. 
+    months = BidPeriod.objects.filter()
+
 class SimpleUpload(TemplateView):
     #used to upload pdf or csv files
     template_name = 'airline/upload.html'

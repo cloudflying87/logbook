@@ -45,7 +45,7 @@ class UpdatePreferences(UpdateView):
     model=Users
     template_name = 'user/updatepreferences.html'
     form_class = UserPreferences
-    success_url = 'updatepreferences'
+    success_url = '/logbook'
 
     def form_valid(self,form):
         form.save()

@@ -17,5 +17,5 @@ class UserPreferences(forms.ModelForm):
     
     class Meta:
         model = Users
-        fields = ('pic','sic','cfi','dual','solo','cx','decimal','time','decimalplaces','defaultairport','defaultairplane','airlineform','zulu')
+        fields = ('pic','sic','cfi','dual','solo','cx','decimal','time','decimalplaces','defaultairport','defaultairplane','airlineform','zulu','anniversarydate')
         

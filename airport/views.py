@@ -9,12 +9,16 @@ from django.views.generic.base import TemplateView
 from django.views.generic import FormView
 from logbook.models import FlightTime
 from reports.forms import DateSelector
+from django.db.models import Count,Sum,Avg
+from django.db.models.functions import Round
 from django.db.models import Q
 import csv
 import os
 import plotly.graph_objects as go
 import plotly.offline as plot
 import pandas as pd
+from django.db.models import TextField
+from django.db.models.functions import Concat
 
 
 @login_required(login_url='/')
@@ -185,11 +189,22 @@ class FlightMap(FormView):
             dw = csv.DictWriter(file, delimiter=',', 
                                 fieldnames=headerList)
             dw.writeheader()
-        print(len(flights))
+        print(type(flights))
+        totals = flights.aggregate(
+            airtotal = Sum('total'),
+                    miletotal = Sum('distance'),
+                    paxtotal = Sum('passengercount'),
+                    flighttotal = Count('total'),
+                    avgflight = Avg('total'),
+                    avgdistance = Avg('distance'),
+                    avgpax = Avg('passengercount')
+            )
+        print(totals)
         for flight in flights:
             write = False
             # for most airline flights or just different departure and arrival airports this will work
-            
+            if flight.scheduledflight == True:
+                continue
             if flight.departure != flight.arrival and flight.departure != None and flight.arrival != None and (flight.route == None or flight.route == ''):
                 test = writecsv(flight.departure,flight.arrival)
                 
@@ -197,49 +212,50 @@ class FlightMap(FormView):
                 route = (flight.route).split('-')
                 route.sort()
                 if len(route) == 1:
-                    writecsv(flight.departure,route[0])
+                    test = writecsv(flight.departure,route[0])
                 elif len(route) == 2:
-                    writecsv(flight.departure,route[0])
-                    writecsv(route[0],route[1])
-                    writecsv(route[1],flight.arrival)
+                    test = writecsv(flight.departure,route[0])
+                    test = writecsv(route[0],route[1])
+                    test = writecsv(route[1],flight.arrival)
                 elif len(route) == 3:
-                    writecsv(flight.departure,route[0])
-                    writecsv(route[0],route[1])
-                    writecsv(route[1],route[2])
-                    writecsv(route[2],flight.arrival)
+                    test = writecsv(flight.departure,route[0])
+                    test = writecsv(route[0],route[1])
+                    test = writecsv(route[1],route[2])
+                    test = writecsv(route[2],flight.arrival)
                 elif len(route) == 4:
-                    writecsv(flight.departure,route[0])
-                    writecsv(route[0],route[1])
-                    writecsv(route[1],route[2])
-                    writecsv(route[2],route[3])
-                    writecsv(route[3],flight.arrival)
+                    test = writecsv(flight.departure,route[0])
+                    test = writecsv(route[0],route[1])
+                    test = writecsv(route[1],route[2])
+                    test = writecsv(route[2],route[3])
+                    test = writecsv(route[3],flight.arrival)
                 elif len(route) == 5:
-                    writecsv(flight.departure,route[0])
-                    writecsv(route[0],route[1])
-                    writecsv(route[1],route[2])
-                    writecsv(route[2],route[3])
-                    writecsv(route[3],route[4])
-                    writecsv(route[4],flight.arrival)
+                    test = writecsv(flight.departure,route[0])
+                    test = writecsv(route[0],route[1])
+                    test = writecsv(route[1],route[2])
+                    test = writecsv(route[2],route[3])
+                    test = writecsv(route[3],route[4])
+                    test = writecsv(route[4],flight.arrival)
 
             if flight.route != None and flight.route != '' and flight.departure != flight.arrival:
                 route = (flight.route).split('-')
                 route.sort()
                 if len(route) == 1:
-                    writecsv(flight.departure,route[0])
-                    writecsv(route[0],flight.arrival)
+                    test = writecsv(flight.departure,route[0])
+                    test = writecsv(route[0],flight.arrival)
                 elif len(route) == 2:
-                    writecsv(flight.departure,route[0])
-                    writecsv(route[0],route[1])
-                    writecsv(route[1],flight.arrival)
+                    test = writecsv(flight.departure,route[0])
+                    test = writecsv(route[0],route[1])
+                    test = writecsv(route[1],flight.arrival)
                 elif len(route) == 3:
-                    writecsv(flight.departure,route[0])
-                    writecsv(route[0],route[1])
-                    writecsv(route[1],route[2])
-                    writecsv(route[2],flight.arrival)
-        with open('./savedfiles/map.csv','a') as outfile:
+                    test = writecsv(flight.departure,route[0])
+                    test = writecsv(route[0],route[1])
+                    test = writecsv(route[1],route[2])
+                    test = writecsv(route[2],flight.arrival)
+        with open('./savedfiles/mapinfo.csv','w') as outfile:
                 write = csv.writer(outfile)
                 rowinfo = len(test[0]),len(test[1]),len(flights)
                 write.writerow(rowinfo)
+                # write.writerow(totals['airtotal'])
                 # write.writerow(len(test[0]))
                 # write.writerow(len(test[1]))
                 # write.writerow(len(flights))
@@ -304,7 +320,7 @@ def drawmap(request):
         lon = df_airports['long'],
         lat = df_airports['lat'],
         hoverinfo = 'text',
-        text = df_airports['airport'],
+        text = df_airports['airport']+' '+df_airports['icao'],
         mode = 'markers',
         marker = dict(
             size = 5,
@@ -314,20 +330,23 @@ def drawmap(request):
                 color = 'rgba(68, 68, 68, 0)'
             )
         )))
-
+    
     fig.update_layout(
         title_text = 'My Flights',
         showlegend = False,
         geo = dict(
             scope = 'north america',
+            framewidth=2000,
             projection_type = 'azimuthal equal area',
             showland = True,
+            # showframe=False,
+            framecolor='rgb(0, 243, 0)',
             landcolor = 'rgb(243, 243, 243)',
             countrycolor = 'rgb(204, 204, 204)',
         ),
     )
 
-    # fig.show()
+    
     fightml = fig.to_html()
     return render(request,'airport/drawmap.html',{'flight':fightml})
 class AirportLookup(TemplateView):
